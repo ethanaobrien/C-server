@@ -22,9 +22,9 @@ int onRequest(SOCKET msg_sock) {
         i++;
         q = strtok(NULL, " ");
     }
-    if (method == "GET") {
-        printf("safdggdhhf");
-    }
+    q = strtok(path, "?");
+    strcpy(path, q);
+    
     
     msg_len = writeData(path, msg_sock);
     
@@ -37,12 +37,6 @@ int onRequest(SOCKET msg_sock) {
     if (msg_len == SOCKET_ERROR) {
       fprintf(stderr, "recv() failed with error %d\n", WSAGetLastError());
       WSACleanup();
-      return -1;
-    }
-
-    if (msg_len == 0) {
-      printf("Client closed connection\n");
-      closesocket(msg_sock);
       return -1;
     }
     

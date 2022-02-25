@@ -1,18 +1,4 @@
-#define BASE_PATH "C:/Users/Ethan/Desktop"
-#define DEFAULT_RESLENGTH 1024 * 1024
-
-void writeHeader(char code[], char msg[], char dest[]) {
-    
-    combineStrings(dest, "HTTP/1.1 ");
-    combineStrings(dest, code);
-    combineStrings(dest, " ");
-    combineStrings(dest, msg);
-    combineStrings(dest, "\r\n");
-    
-    combineStrings(dest, "Content-Type: text/html; charset=UTF-8\r\n\r\n");
-    
-    
-}
+#define BASE_PATH "C:/Users/697510/emulatorjs"
 
 int writeData(char requestPath[], SOCKET msg_sock) {
     char path[500] = "";
@@ -21,46 +7,41 @@ int writeData(char requestPath[], SOCKET msg_sock) {
     combineStrings(path, BASE_PATH);
     
     char *q = strtok(requestPath, "%20");
+    combineStrings(path, q);
     while(q != NULL) {
-        combineStrings(path, " ");
-        combineStrings(path, q);
         q = strtok(NULL, "%20");
+        if (q != NULL) {
+            combineStrings(path, " ");
+            combineStrings(path, q);
+        }
     }
     printf("%s\n", path);
     
     //first, get the length of the file
     FILE *file;
-    file = fopen(path, "r");
+    file = fopen(path, "rb");
     if (file == NULL) {
-        char response[] = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n404 - File not found\r\n\r\n";
+        char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n404 - File not found\r\n\r\n";
         return send(msg_sock, response, sizeof(response)-1, 0);
     }
+    fseek(file, 0, SEEK_END);
+    unsigned long len = (unsigned long)ftell(file);
+    fseek(file, 0, SEEK_SET);
     
-    
-    char res[DEFAULT_RESLENGTH] = "";
-    writeHeader("200", "OK", res);
-    char data[50];
-    while(fgets(data, 50, file) != NULL) {
-        combineStrings(res, data);
+    //todo: set content length header
+    char *mime = getMime(path);
+    char header[] = "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n";
+    int msg_len;
+    msg_len = send(msg_sock, header, sizeof(header)-1, 0);
+    if (msg_len == 0) {
+        printf("Client closed connection\n");
+        closesocket(msg_sock);
+        return 0;
     }
+    unsigned char res[len];
+    fread(res, len, 1, file);
     fclose(file);
     
-    
-    combineStrings(res, "\r\n\r\n");
-    
-    //now we need to cut out any extra data
-    for (i=0; i<strlen(res); i++) {
-        if (res[i] != '\0') {
-            length++;
-        }
-    }
-    char response[length];
-    for (i=0; i<strlen(res); i++) {
-        if (res[i] != '\0') {
-            response[j] = res[i];
-            j++;
-        }
-    }
-    return send(msg_sock, response, sizeof(response)-1, 0);
+    return send(msg_sock, res, sizeof(res)-1, 0);
 }
 
