@@ -1,12 +1,13 @@
-#define BASE_PATH "C:/Users/697510/git/emulatorjs"
 
-int writeData(char requestPath[], SOCKET msg_sock) {
+int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
     char path[500] = "";
+    char reqpth[100] = "";
+    strcpy(reqpth, requestPath);
     int i=0, j=0;
     int length = 0;
-    combineStrings(path, BASE_PATH);
+    combineStrings(path, Settings.directory);
     
-    char *q = strtok(requestPath, "%20");
+    char *q = strtok(reqpth, "%20");
     combineStrings(path, q);
     while(q != NULL) {
         q = strtok(NULL, "%20");
@@ -44,40 +45,44 @@ int writeData(char requestPath[], SOCKET msg_sock) {
             return send(msg_sock, response, sizeof(response)-1, 0);
         }
         
-        char response[] = "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n";
+        char response[] = "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\ntransfer-encoding: chunked\r\n\r\n";
         int msg_len;
-        msg_len = send(msg_sock, response, sizeof(response)-1, 0);
-        if (msg_len == 0) {
-            printf("Client closed connection\n");
-            closesocket(msg_sock);
-            fclose(file);
-            return 0;
+        if (! writeToSocket(msg_sock, response, file)) {
+            return 1;
         }
         
         fseek(template, 0, SEEK_END);
         unsigned long len = (unsigned long)ftell(template)+1;
         fseek(template, 0, SEEK_SET);
         
-        unsigned char res[len+10000];
+        unsigned char res[len];
         fread(res, len, 1, template);
         fclose(template);
+        if (! writeToSocket(msg_sock, res, file)) {
+            return 1;
+        }
         
         struct dirent *entry;
         if (! compareStrings(requestPath, "/")) {
-            combineStrings(res, "<script>onHasParentDirectory();</script>");
+            if (! writeToSocket(msg_sock, "<script>onHasParentDirectory();</script>", file)) {
+                return 1;
+            }
         }
-        char addSter[1000] = "";
+        char addSter[26+strlen(requestPath)];
         sprintf(addSter, "%s%s%s", "<script>start('", requestPath, "')</script>");
+        if (! writeToSocket(msg_sock, res, file)) {
+            return 1;
+        }
         combineStrings(res, addSter);
         while((entry = readdir(folder))) {
             struct _stat filestat;
             char paaath[200] = "";
-            combineStrings(paaath, BASE_PATH);
+            combineStrings(paaath, Settings.directory);
             combineStrings(paaath, "/");
             combineStrings(paaath, entry->d_name);
             _stat(paaath, &filestat);
             char addStr[1000] = "";
-            char isDir[5] = "";
+            char isDir[6] = "";
             if (S_ISDIR(filestat.st_mode)) {
                 strcpy(isDir, "true ");
             } else {
