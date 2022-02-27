@@ -30,28 +30,15 @@ int strLength(char str[]) {
 }
 
 int getIntTextLen(int a) {
-    if (a < 10) {
-        return 1;
-    } else if (a < 100) {
-        return 2;
-    } else if (a < 1000) {
-        return 3;
-    } else if (a < 10000) {
-        return 4;
-    } else if (a < 100000) {
-        return 5;
-    } else if (a < 1000000) {
-        return 6;
-    } else if (a < 10000000) {
-        return 7;
-    } else if (a < 100000000) {
-        return 8;
-    } else if (a < 1000000000) {
-        return 9;
-    } else if (a < 10000000000) {
-        return 10;
+    int i = 10;
+    int j = 1;
+    while (1) {
+        if (a < i) {
+            return j;
+        }
+        i*=10;
+        j++;
     }
-    return 11;
 }
 
 boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
@@ -60,7 +47,9 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
     if (msg_len == 0) {
         printf("Client closed connection\n");
         closesocket(msg_sock);
-        fclose(file);
+        if (file != NULL) {
+            fclose(file);
+        }
         return FALSE;
     }
     return TRUE;

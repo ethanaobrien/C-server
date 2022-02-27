@@ -11,8 +11,8 @@ void *onRequest(void *arguments) {
     
     char *p;
     char *q;
-    char path[100];
-    char method[10];
+    char path[100] = "";
+    char method[10] = "";
     char szBuff[DEFAULT_BUFLEN];
     int msg_len = recv(msg_sock, szBuff, sizeof(szBuff), 0);
     
@@ -30,30 +30,15 @@ void *onRequest(void *arguments) {
     }
     q = strtok(path, "?");
     strcpy(path, q);
-    int length = 0, j=0;
-    for (int i=0; i<strlen(path); i++) {
-        if (path[i] != '\0') {
-            length++;
-        }
-    }
-    char paaaath[length];
-    for (i=0; i<strlen(path); i++) {
-        if (path[i] != '\0') {
-            paaaath[j] = path[i];
-            j++;
-        }
-    }
-    
-    
-    msg_len = writeData(paaaath, msg_sock, Settings);
+    msg_len = writeData(path, msg_sock, Settings);
     
     if (msg_len == 0) {
         printf("Client closed connection\n");
     }
 
     if (msg_len == SOCKET_ERROR) {
-      fprintf(stderr, "recv() failed with error %d\n", WSAGetLastError());
-      WSACleanup();
+        fprintf(stderr, "recv() failed with error %d\n", WSAGetLastError());
+        WSACleanup();
     }
     closesocket(msg_sock);
     free(arguments);

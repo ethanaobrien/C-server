@@ -29,7 +29,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
             combineStrings(path, "/index.html");
             file = fopen(path, "rb");
             if (file == NULL) {
-                char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n404 - File not found";
+                char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n\r\n404 - File not found";
                 return send(msg_sock, response, sizeof(response)-1, 0);
             }
         } else {
@@ -41,71 +41,55 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         template = fopen("./directory-listing-template.html", "rb");
         if (template == NULL) {
             closedir(folder);
-            char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n404 - File not found";
+            char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n\r\n404 - File not found";
             return send(msg_sock, response, sizeof(response)-1, 0);
-        }
-        
-        char response[] = "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\ntransfer-encoding: chunked\r\n\r\n";
-        int msg_len;
-        if (! writeToSocket(msg_sock, response, file)) {
-            return 1;
         }
         
         fseek(template, 0, SEEK_END);
         unsigned long len = (unsigned long)ftell(template)+1;
         fseek(template, 0, SEEK_SET);
-        
+        if (! compareStrings(requestPath, "/")) {
+            len+=24;
+        }
+        len+=30;
+        len+=strlen(requestPath);
+        struct dirent *entry;
+        while((entry = readdir(folder))) {
+            len+=strlen(entry->d_name);
+            len+=strlen(entry->d_name);
+            len+=39;
+        }
         unsigned char res[len];
         fread(res, len, 1, template);
         fclose(template);
-        if (! writeToSocket(msg_sock, res, file)) {
-            return 1;
-        }
-        
-        struct dirent *entry;
+        combineStrings(res, "\n<script>");
         if (! compareStrings(requestPath, "/")) {
-            if (! writeToSocket(msg_sock, "<script>onHasParentDirectory();</script>", file)) {
-                return 1;
-            }
+            combineStrings(res, "\nonHasParentDirectory();");
         }
-        char addSter[26+strlen(requestPath)];
-        sprintf(addSter, "%s%s%s", "<script>start('", requestPath, "')</script>");
-        if (! writeToSocket(msg_sock, res, file)) {
-            return 1;
-        }
+        char addSter[10+strlen(requestPath)];
+        sprintf(addSter, "%s%s%s", "\nstart('", requestPath, "');");
         combineStrings(res, addSter);
+        rewinddir(folder);
         while((entry = readdir(folder))) {
-            struct _stat filestat;
-            char paaath[200] = "";
-            combineStrings(paaath, Settings.directory);
-            combineStrings(paaath, "/");
-            combineStrings(paaath, entry->d_name);
-            _stat(paaath, &filestat);
-            char addStr[1000] = "";
+            char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
             char isDir[6] = "";
-            if (S_ISDIR(filestat.st_mode)) {
+            if (FALSE) {
                 strcpy(isDir, "true ");
             } else {
                 strcpy(isDir, "false");
             }
-            sprintf(addStr, "%s%s%s%s%s%s%s", "<script>addRow('", entry->d_name, "', '", entry->d_name, "', ", isDir, ", '', '', '', '');</script>");
+            sprintf(addStr, "%s%s%s%s%s%s%s", "\naddRow('", entry->d_name, "', '", entry->d_name, "', ", isDir, ", '', '', '', '');");
             combineStrings(res, addStr);
         }
+        combineStrings(res, "\n</script>");
         closedir(folder);
-        length = 0;
-        for (i=0; i<strlen(res); i++) {
-            if (res[i] != '\0') {
-                length++;
-            }
+        int h1 = 101+getIntTextLen(len);
+        char header[h1];
+        sprintf(header, "%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ", len, "\r\n\r\n\r\n");
+        if (! writeToSocket(msg_sock, header, NULL)) {
+            return 1;
         }
-        char responsee[length];
-        for (i=0; i<strlen(res); i++) {
-            if (res[i] != '\0') {
-                responsee[j] = res[i];
-                j++;
-            }
-        }
-        return send(msg_sock, responsee, sizeof(responsee)-1, 0);
+        return send(msg_sock, res, sizeof(res)-1, 0);
     }
     fseek(file, 0, SEEK_END);
     unsigned long len = (unsigned long)ftell(file)+1;
@@ -132,9 +116,9 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         strcpy(contentType, "text/plain; charset=utf-8");
     }
     int cl = getIntTextLen(len);
-    int h1 = 76+strLength(contentType)+cl;
+    int h1 = 78+strLength(contentType)+cl;
     char header[h1];
-    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len-1, "\r\n\r\n");
+    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len-1, "\r\n\r\n\r\n");
     int msg_len;
     msg_len = send(msg_sock, header, sizeof(header)-1, 0);
     if (msg_len == 0) {
