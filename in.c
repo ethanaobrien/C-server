@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     local.sin_addr.s_addr = INADDR_ANY;
     local.sin_port = htons(DEFAULT_PORT);
 
-    sock = socket(AF_INET, SOCK_STREAM, 0); //TCp socket
+    sock = socket(AF_INET, SOCK_STREAM, 0); // tcp socket
 
     if (sock == INVALID_SOCKET) {
         fprintf(stderr, "socket() failed with error %d\n", WSAGetLastError());
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         addr_len = sizeof(client_addr);
-        msg_sock = accept(sock, (struct sockaddr * ) & client_addr, & addr_len);
+        msg_sock = accept(sock, (struct sockaddr * ) &client_addr, &addr_len);
         if (msg_sock == INVALID_SOCKET) {
             fprintf(stderr, "accept() failed with error %d\n", WSAGetLastError());
             WSACleanup();

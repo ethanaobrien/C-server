@@ -7,13 +7,11 @@ int render404(SOCKET msg_sock) {
 
 int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
     char path[300] = "";
-    char reqpth[300] = "";
     char decodedPath[300] = "";
-    strcpy(reqpth, requestPath);
     int i=0, j=0;
     int length = 0;
     combineStrings(path, Settings.directory);
-    urldecode(decodedPath, reqpth);
+    urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
     printf("%s\n", path);
     
@@ -21,19 +19,22 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
     FILE *file;
     DIR *folder;
     boolean isDirectory = TRUE;
+    boolean isIndex = FALSE;
     file = fopen(path, "rb");
     if (file == NULL) {
-        if (endsWith(path, '/')) {
-            char header[strlen(path)+89];
-            sprintf(header, "%s%s%s", "HTTP/1.1 301 Moved Permanently\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\nLocation: ", path, "/\r\n\r\n\r\n");
+        if (! endsWith(path, '/')) {
+            char header[strlen(requestPath)+87];
+            sprintf(header, "%s%s%s", "HTTP/1.1 301 Moved Permanently\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\nLocation: ", requestPath, "/\r\n\r\n");
             return send(msg_sock, header, sizeof(header)-1, 0);
         }
         if (Settings.index) {
-            char indexPath[strlen(path)+10];
-            combineStrings(indexPath, path);
+            char indexPath[300] = "";
+            combineStrings(indexPath, Settings.directory);
+            combineStrings(indexPath, requestPath);
             combineStrings(indexPath, "index.html");
-            file = fopen(path, "rb");
+            file = fopen(indexPath, "rb");
             if (file != NULL) {
+                isIndex = TRUE;
                 isDirectory = FALSE;
             }
         }
@@ -42,10 +43,10 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
             if (folder != NULL) {
                 isDirectory = TRUE;
             } else {
-                render404(msg_sock);
+                return render404(msg_sock);
             }
-        } else if (! Settings.directoryListing) {
-            render404(msg_sock);
+        } else if (isDirectory != FALSE) {
+            return render404(msg_sock);
         }
     } else {
         isDirectory = FALSE;
@@ -57,8 +58,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         if (! compareStrings(requestPath, "/")) {
             len+=24;
         }
-        len+=30;
-        len+=strlen(requestPath);
+        len+=52;
         struct dirent *entry;
         while((entry = readdir(folder))) {
             len+=strlen(entry->d_name);
@@ -68,17 +68,15 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         unsigned char res[len];
         combineStrings2(res, Settings.directoryListingTemplate, Settings.directoryListingTemplateSize-2);
         combineStrings(res, "\n<script>");
+        combineStrings(res, "\nstart(window.location.pathname);");
         if (! compareStrings(requestPath, "/")) {
             combineStrings(res, "\nonHasParentDirectory();");
         }
-        char addSter[10+strlen(requestPath)];
-        sprintf(addSter, "%s%s%s", "\nstart('", requestPath, "');");
-        combineStrings(res, addSter);
         rewinddir(folder);
         while((entry = readdir(folder))) {
             char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
             char isDir[6] = "";
-            if (isItDirectory(Settings, entry->d_name)) {
+            if (isItDirectory(Settings, entry->d_name, requestPath)) {
                 strcpy(isDir, "true ");
             } else {
                 strcpy(isDir, "false");
@@ -92,7 +90,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         char header[h1];
         sprintf(header, "%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ", len, "\r\n\r\n\r\n");
         if (! writeToSocket(msg_sock, header, NULL)) {
-            return 1;
+            return 0;
         }
         return send(msg_sock, res, sizeof(res)-1, 0);
     }
@@ -114,19 +112,21 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         i++;
     }
     char contentType[100] = "";
-    if (compareStrings(ext, "html")) {
+    if (compareStrings(ext, "html") || isIndex) {
         strcpy(contentType, "text/html; charset=utf-8");
     } else if (compareStrings(ext, "json")) {
         strcpy(contentType, "application/json;");
+    } else if (compareStrings(ext, "mp4")) {
+        strcpy(contentType, "video/mp4;");
     } else if (compareStrings(ext, "js")) {
         strcpy(contentType, "application/javascript; charset=utf-8");
     } else {
         strcpy(contentType, "text/plain; charset=utf-8");
     }
     int cl = getIntTextLen(len);
-    int h1 = 78+strLength(contentType)+cl;
+    int h1 = 76+24+strLength(contentType)+cl;
     char header[h1];
-    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len+1, "\r\n\r\n\r\n");
+    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len-1, "\r\nConnection: keep-alive\r\n\r\n");
     int msg_len;
     msg_len = send(msg_sock, header, sizeof(header)-1, 0);
     if (msg_len == 0) {
@@ -138,7 +138,6 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
     unsigned char res[len];
     fread(res, len, 1, file);
     fclose(file);
-    
     return send(msg_sock, res, sizeof(res)-1, 0);
 }
 

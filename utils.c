@@ -63,10 +63,11 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
     return TRUE;
 }
 
-boolean isItDirectory(struct set Settings, char entryName[]) {
+boolean isItDirectory(struct set Settings, char entryName[], char requestPath[]) {
     struct _stat filestat;
     char path[300] = "";
     combineStrings(path, Settings.directory);
+    combineStrings(path, requestPath);
     combineStrings(path, "/");
     combineStrings(path, entryName);
     _stat(path, &filestat);
@@ -74,7 +75,7 @@ boolean isItDirectory(struct set Settings, char entryName[]) {
 }
 
 boolean endsWith(char string1[], char string2) {
-    return string1[strlen(string1)-2] == '/';
+    return string1[strlen(string1)-1] == '/';
 }
 
 void urldecode(char *dst, const char *src)
