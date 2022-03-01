@@ -8,10 +8,9 @@ void *onRequest(void *arguments) {
     SOCKET msg_sock = args->msg_sock;
     struct set Settings = args->Settings;
     
-    
     char *p;
     char *q;
-    char path[100] = "";
+    char path[300] = "";
     char method[10] = "";
     char szBuff[DEFAULT_BUFLEN];
     int msg_len = recv(msg_sock, szBuff, sizeof(szBuff), 0);

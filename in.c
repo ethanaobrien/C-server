@@ -11,7 +11,9 @@
 struct set {
     boolean directoryListing;
     boolean index;
-    char directory[100];
+    char directory[300];
+    char directoryListingTemplate[18679];
+    unsigned long directoryListingTemplateSize;
 };
 
 struct arg_struct {
@@ -30,6 +32,18 @@ int main(int argc, char *argv[]) {
     
     Settings.directoryListing = TRUE;
     Settings.index = FALSE;
+    
+    FILE *template;
+    template = fopen("./directory-listing-template.html", "rb");
+    if (template == NULL) {
+        printf("Failed to read directory listing template");
+        exit(1);
+    }
+    
+    Settings.directoryListingTemplateSize = 18679;
+    fread(Settings.directoryListingTemplate, Settings.directoryListingTemplateSize, 1, template);
+    fclose(template);
+    
     
     if (argc > 1) {
         strcpy(Settings.directory, argv[1]);
@@ -88,7 +102,6 @@ int main(int argc, char *argv[]) {
         }
 
         if (msg_sock == -1) {
-            perror("Unable to accept connection.");
             continue;
         }
 
@@ -100,7 +113,6 @@ int main(int argc, char *argv[]) {
         
         pthread_t thread_id;
         pthread_create(&thread_id, NULL, onRequest, (void*)args);
-        //onRequest(msg_sock); todo: threading
         
     }
     WSACleanup();

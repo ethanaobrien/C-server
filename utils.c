@@ -8,15 +8,7 @@ boolean compareStrings(char a[], char b[]) {
 }
 
 void combineStrings(char s1[], char s2[]) {
-    int length, j;
-    length = 0;
-    while (s1[length] != '\0') {
-        ++length;
-    }
-    for (j = 0; s2[j] != '\0'; ++j, ++length) {
-        s1[length] = s2[j];
-    }
-    s1[length] = '\0';
+    strcat(s1, s2);
 }
 
 int strLength(char str[]) {
@@ -27,6 +19,22 @@ int strLength(char str[]) {
         }
         i++;
     }
+}
+
+void combineStrings2(char s1[], char s2[], unsigned long len) {
+    int length, j, x=0;
+    length = 0;
+    while (s1[length] != '\0') {
+        ++length;
+    }
+    for (j = 0; s2[j] != '\0'; ++j, ++length) {
+        if (len < x) {
+            break;
+        }
+        x++;
+        s1[length] = s2[j];
+    }
+    s1[length] = '\0';
 }
 
 int getIntTextLen(int a) {
@@ -53,5 +61,50 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
         return FALSE;
     }
     return TRUE;
+}
+
+boolean isItDirectory(struct set Settings, char entryName[]) {
+    struct _stat filestat;
+    char path[300] = "";
+    combineStrings(path, Settings.directory);
+    combineStrings(path, "/");
+    combineStrings(path, entryName);
+    _stat(path, &filestat);
+    return S_ISDIR(filestat.st_mode);
+}
+
+boolean endsWith(char string1[], char string2) {
+    return string1[strlen(string1)-2] == '/';
+}
+
+void urldecode(char *dst, const char *src)
+{
+    char a, b;
+    while (*src) {
+        if ((*src == '%') &&
+            ((a = src[1]) && (b = src[2])) &&
+            (isxdigit(a) && isxdigit(b))) {
+            if (a >= 'a')
+                a -= 'a'-'A';
+            if (a >= 'A')
+                a -= ('A' - 10);
+            else
+                a -= '0';
+            if (b >= 'a')
+                b -= 'a'-'A';
+            if (b >= 'A')
+                b -= ('A' - 10);
+            else
+                b -= '0';
+            *dst++ = 16*a+b;
+            src+=3;
+        } else if (*src == '+') {
+            *dst++ = ' ';
+            src++;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst++ = '\0';
 }
 

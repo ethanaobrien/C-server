@@ -1,53 +1,59 @@
 
+int render404(SOCKET msg_sock) {
+    char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 20\r\n\r\n404 - File not found";
+    return send(msg_sock, response, sizeof(response)-1, 0);
+}
+
+
 int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
-    char path[500] = "";
-    char reqpth[100] = "";
+    char path[300] = "";
+    char reqpth[300] = "";
+    char decodedPath[300] = "";
     strcpy(reqpth, requestPath);
     int i=0, j=0;
     int length = 0;
     combineStrings(path, Settings.directory);
-    
-    char *q = strtok(reqpth, "%20");
-    combineStrings(path, q);
-    while(q != NULL) {
-        q = strtok(NULL, "%20");
-        if (q != NULL) {
-            combineStrings(path, " ");
-            combineStrings(path, q);
-        }
-    }
+    urldecode(decodedPath, reqpth);
+    combineStrings(path, decodedPath);
     printf("%s\n", path);
     
     //first, get the length of the file
     FILE *file;
     DIR *folder;
-    boolean isDirectory = FALSE;
+    boolean isDirectory = TRUE;
     file = fopen(path, "rb");
     if (file == NULL) {
-        folder = opendir(path);
-        if (folder == NULL) {
-            combineStrings(path, "/index.html");
-            file = fopen(path, "rb");
-            if (file == NULL) {
-                char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n\r\n404 - File not found";
-                return send(msg_sock, response, sizeof(response)-1, 0);
-            }
-        } else {
-            isDirectory = TRUE;
+        if (endsWith(path, '/')) {
+            char header[strlen(path)+89];
+            sprintf(header, "%s%s%s", "HTTP/1.1 301 Moved Permanently\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\nLocation: ", path, "/\r\n\r\n\r\n");
+            return send(msg_sock, header, sizeof(header)-1, 0);
         }
+        if (Settings.index) {
+            char indexPath[strlen(path)+10];
+            combineStrings(indexPath, path);
+            combineStrings(indexPath, "index.html");
+            file = fopen(path, "rb");
+            if (file != NULL) {
+                isDirectory = FALSE;
+            }
+        }
+        if (isDirectory != FALSE && Settings.directoryListing) {
+            folder = opendir(path);
+            if (folder != NULL) {
+                isDirectory = TRUE;
+            } else {
+                render404(msg_sock);
+            }
+        } else if (! Settings.directoryListing) {
+            render404(msg_sock);
+        }
+    } else {
+        isDirectory = FALSE;
     }
     if (isDirectory) {
-        FILE *template;
-        template = fopen("./directory-listing-template.html", "rb");
-        if (template == NULL) {
-            closedir(folder);
-            char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n\r\n404 - File not found";
-            return send(msg_sock, response, sizeof(response)-1, 0);
-        }
+        //render directory
+        unsigned long len = Settings.directoryListingTemplateSize;
         
-        fseek(template, 0, SEEK_END);
-        unsigned long len = (unsigned long)ftell(template)+1;
-        fseek(template, 0, SEEK_SET);
         if (! compareStrings(requestPath, "/")) {
             len+=24;
         }
@@ -60,8 +66,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
             len+=39;
         }
         unsigned char res[len];
-        fread(res, len, 1, template);
-        fclose(template);
+        combineStrings2(res, Settings.directoryListingTemplate, Settings.directoryListingTemplateSize-2);
         combineStrings(res, "\n<script>");
         if (! compareStrings(requestPath, "/")) {
             combineStrings(res, "\nonHasParentDirectory();");
@@ -73,7 +78,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         while((entry = readdir(folder))) {
             char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
             char isDir[6] = "";
-            if (FALSE) {
+            if (isItDirectory(Settings, entry->d_name)) {
                 strcpy(isDir, "true ");
             } else {
                 strcpy(isDir, "false");
@@ -91,6 +96,8 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         }
         return send(msg_sock, res, sizeof(res)-1, 0);
     }
+    
+    //render file
     fseek(file, 0, SEEK_END);
     unsigned long len = (unsigned long)ftell(file)+1;
     fseek(file, 0, SEEK_SET);
@@ -101,6 +108,7 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         strcpy(ext, p);
         p = strtok(NULL, ".");
     }
+    i=0;
     while(ext[i]) {
         tolower(ext[i]);
         i++;
@@ -118,11 +126,11 @@ int writeData(char requestPath[], SOCKET msg_sock, struct set Settings) {
     int cl = getIntTextLen(len);
     int h1 = 78+strLength(contentType)+cl;
     char header[h1];
-    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len-1, "\r\n\r\n\r\n");
+    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", len+1, "\r\n\r\n\r\n");
     int msg_len;
     msg_len = send(msg_sock, header, sizeof(header)-1, 0);
     if (msg_len == 0) {
-        printf("Client closed connection\n");
+        //printf("Client closed connection\n");
         closesocket(msg_sock);
         fclose(file);
         return 0;
