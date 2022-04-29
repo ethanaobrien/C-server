@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    printf("Listening on 127.0.0.1%i\n", DEFAULT_PORT);
+    printf("Listening on 127.0.0.1:%i\n", DEFAULT_PORT);
 
     while (1) {
         addr_len = sizeof(client_addr);

@@ -24,9 +24,6 @@ int strLength(char str[]) {
 void combineStrings2(char s1[], char s2[], unsigned long len) {
     int length, j, x=0;
     length = 0;
-    while (s1[length] != '\0') {
-        ++length;
-    }
     for (j = 0; s2[j] != '\0'; ++j, ++length) {
         if (len < x) {
             break;
@@ -75,7 +72,12 @@ boolean isItDirectory(struct set Settings, char entryName[], char requestPath[])
 }
 
 boolean endsWith(char string1[], char string2) {
-    return string1[strlen(string1)-1] == '/';
+    return string1[strlen(string1)-1] == string2;
+}
+
+boolean startsWith(const char *pre, const char *str)
+{
+    return strncmp(pre, str, strlen(pre)) == 0;
 }
 
 void urldecode(char *dst, const char *src)
