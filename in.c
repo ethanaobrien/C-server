@@ -48,9 +48,8 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         strcpy(Settings.directory, argv[1]);
     } else {
-        printf("path to serve not inputted");
-        exit(1);
-        return -1;
+        strcpy(Settings.directory, "C:");
+        printf("Defaulting to C:/\n");
     }
     
     

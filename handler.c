@@ -12,7 +12,7 @@ void *onRequest(void *arguments) {
     char *q;
     char w[300] = "";
     char path[300] = "";
-    char method[10] = "";
+    char method[100] = "";
     char range[300] = "";
     boolean hasRange = FALSE;
     char szBuff[DEFAULT_BUFLEN];
@@ -38,7 +38,7 @@ void *onRequest(void *arguments) {
         }
         q = strtok(w, " ");
         int i = 0;
-        while(q != NULL || i < 2) {
+        while(q != NULL) {
             if (i == 0) {
                 strcpy(method, q);
             } else if (i == 1) {

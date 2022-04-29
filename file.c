@@ -105,7 +105,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     unsigned long len = (unsigned long)ftell(file)+1;
     fseek(file, 0, SEEK_SET);
     
-    char ext[100];
+    char ext[100] = "";
     char *p = strtok(path, ".");
     while(p != NULL) {
         strcpy(ext, p);
@@ -125,6 +125,10 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         strcpy(contentType, "video/mp4");
     } else if (compareStrings(ext, "js")) {
         strcpy(contentType, "application/javascript; charset=utf-8");
+    } else if (compareStrings(ext, "wasm")) {
+        strcpy(contentType, "application/wasm");
+    } else if (compareStrings(ext, "webm")) {
+        strcpy(contentType, "video/webm");
     } else {
         strcpy(contentType, "text/plain; charset=utf-8");
     }
@@ -135,24 +139,28 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     int cl = len-1;
     if (hasRange) {
         r = strtok(rangeHeader, "=");
-        r = strtok(NULL, "=");
+        r = strtok(r, "=");
         if (endsWith(r, '-') || strchr(r, '-') == NULL) {
-            r = strtok(r, "-");
+            if (strchr(r, '-') != NULL) {
+                r = strtok(r, "-");
+            }
             fileOffset = atoi(r);
             cl = len-1-fileOffset;
             sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes ", fileOffset, '-', len-2, '/', len-1, "\r\n");
+            code = (fileOffset == 0) ? 200 : 206;
         } else {
             r = strtok(r, "-");
             r = strtok(NULL, "-");
             fileEndOffset = atoi(r);
             cl = fileEndOffset-fileOffset;
             sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "\r\n");
+            code = 206;
         }
     }
     int h1 = 76+24+strLength(contentType)+getIntTextLen(len)+strLength(hea);
     char header[h1];
     memset(header, '\0', sizeof(header));
-    sprintf(header, "%s%s%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", cl, "\r\nConnection: keep-alive\r\n");
+    sprintf(header, "%s%i%s%s%s%i%s", "HTTP/1.1 ", code, " OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", cl, "\r\nConnection: keep-alive\r\n");
     if (hasRange) {
         strcat(header, hea);
     }
