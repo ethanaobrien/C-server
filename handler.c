@@ -1,6 +1,6 @@
 #include "utils.c"
+#include "mime.c"
 #include "file.c"
-#define DEFAULT_BUFLEN 1024 * 12
 
 void *onRequest(void *arguments) {
     
@@ -15,8 +15,9 @@ void *onRequest(void *arguments) {
     char method[100] = "";
     char range[300] = "";
     boolean hasRange = FALSE;
-    char szBuff[DEFAULT_BUFLEN];
+    char szBuff[1024*12];
     int msg_len;
+    int i=0;
     while(1) {
         memset(szBuff, '\0', sizeof(szBuff));
         msg_len = recv(msg_sock, szBuff, sizeof(szBuff), 0);
@@ -33,11 +34,15 @@ void *onRequest(void *arguments) {
                 strcpy(range, p);
                 hasRange = TRUE;
             }
+            if (startsWith("range", p)) {
+                strcpy(range, p);
+                hasRange = TRUE;
+            }
             j++;
             p = strtok(NULL, "\r\n");
         }
         q = strtok(w, " ");
-        int i = 0;
+        i=0;
         while(q != NULL) {
             if (i == 0) {
                 strcpy(method, q);
@@ -50,7 +55,7 @@ void *onRequest(void *arguments) {
         q = strtok(path, "?");
         strcpy(path, q);
         
-        msg_len = writeData(path, msg_sock, hasRange, range, Settings);
+        msg_len = writeData(path, msg_sock, hasRange, range, Settings, method);
         if (msg_len == 0) {
             printf("Client closed connection\n");
             break;

@@ -1,11 +1,18 @@
 
-int render404(SOCKET msg_sock) {
-    char response[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 20\r\n\r\n404 - File not found";
+int render404(SOCKET msg_sock, char method[]) {
+    char header[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Length: 20\r\n\r\n";
+    char response[] = "404 - File not found";
+    if (! writeToSocket(msg_sock, header, NULL)) {
+        return 0;
+    }
+    if (startsWith(method, "HEAD")) {
+        return 1;
+    }
     return send(msg_sock, response, sizeof(response)-1, 0);
 }
 
 
-int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], struct set Settings) {
+int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], struct set Settings, char method[]) {
     char path[300] = "";
     char decodedPath[300] = "";
     int i=0, j=0;
@@ -43,10 +50,10 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             if (folder != NULL) {
                 isDirectory = TRUE;
             } else {
-                return render404(msg_sock);
+                return render404(msg_sock, method);
             }
         } else if (isDirectory != FALSE && isIndex != TRUE) {
-            return render404(msg_sock);
+            return render404(msg_sock, method);
         }
     } else {
         isDirectory = FALSE;
@@ -71,6 +78,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             len+=39;
         }
         unsigned char res[len];
+        memset(res, '\0', sizeof(res));
         combineStrings2(res, Settings.directoryListingTemplate, Settings.directoryListingTemplateSize-2);
         combineStrings(res, "\n<script>");
         combineStrings(res, "\nstart(window.location.pathname);");
@@ -97,6 +105,9 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         if (! writeToSocket(msg_sock, header, NULL)) {
             return 0;
         }
+        if (startsWith(method, "HEAD")) {
+            return 1;
+        }
         return send(msg_sock, res, sizeof(res)-1, 0);
     }
     
@@ -116,51 +127,50 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         tolower(ext[i]);
         i++;
     }
-    char contentType[100] = "";
-    if (compareStrings(ext, "html") || isIndex) {
-        strcpy(contentType, "text/html; charset=utf-8");
-    } else if (compareStrings(ext, "json")) {
-        strcpy(contentType, "application/json");
-    } else if (compareStrings(ext, "mp4")) {
-        strcpy(contentType, "video/mp4");
-    } else if (compareStrings(ext, "js")) {
-        strcpy(contentType, "application/javascript; charset=utf-8");
-    } else if (compareStrings(ext, "wasm")) {
-        strcpy(contentType, "application/wasm");
-    } else if (compareStrings(ext, "webm")) {
-        strcpy(contentType, "video/webm");
-    } else {
-        strcpy(contentType, "text/plain; charset=utf-8");
+    char contentType[100];
+    char der[3000];
+    memset(der, '\0', sizeof(der));
+    getMime(ext, contentType);
+    boolean hasContentType = (strlen(contentType) != 0);
+    if (hasContentType) {
+        sprintf(der, "%s%s%s", "Content-Type: ", contentType, "\r\n");
     }
     char *r;
     int fileOffset=0, fileEndOffset=len-1, code=200;
     char hea[3000];
     memset(hea, '\0', sizeof(hea));
     int cl = len-1;
-    if (hasRange) {
+    if (hasRange && strchr(rangeHeader, '=') != NULL) {
         r = strtok(rangeHeader, "=");
-        r = strtok(r, "=");
+        r = strtok(NULL, "=");
         if (endsWith(r, '-') || strchr(r, '-') == NULL) {
             if (strchr(r, '-') != NULL) {
                 r = strtok(r, "-");
             }
             fileOffset = atoi(r);
-            cl = len-1-fileOffset;
+            cl = len-fileOffset-1;
             sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes ", fileOffset, '-', len-2, '/', len-1, "\r\n");
             code = (fileOffset == 0) ? 200 : 206;
         } else {
             r = strtok(r, "-");
+            fileOffset = atoi(r);
+            printf("%s\n", r);
             r = strtok(NULL, "-");
             fileEndOffset = atoi(r);
-            cl = fileEndOffset-fileOffset;
+            printf("%s\n", r);
+            cl = fileEndOffset-fileOffset+1;
             sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "\r\n");
             code = 206;
         }
+        fseek(file, fileOffset, SEEK_SET);
     }
-    int h1 = 76+24+strLength(contentType)+getIntTextLen(len)+strLength(hea);
+    int h1 = 81+getIntTextLen(cl)+getIntTextLen(code)+strLength(hea)+strLength(der);
     char header[h1];
     memset(header, '\0', sizeof(header));
-    sprintf(header, "%s%i%s%s%s%i%s", "HTTP/1.1 ", code, " OK\r\nAccept-Ranges: bytes\r\nContent-Type: ", contentType, "\r\nContent-Length: ", cl, "\r\nConnection: keep-alive\r\n");
+    sprintf(header, "%s%i%s%i%s", "HTTP/1.1 ", code, " OK\r\nAccept-Ranges: bytes\r\nContent-Length: ", cl, "\r\nConnection: keep-alive\r\n");
+    if (hasContentType) {
+        strcat(header, der);
+    }
     if (hasRange) {
         strcat(header, hea);
     }
@@ -173,10 +183,12 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         fclose(file);
         return 0;
     }
+    if (startsWith(method, "HEAD")) {
+        return 1;
+    }
     int readChunkSize = 1024;
     if (cl > readChunkSize || hasRange) {
         unsigned long readLen = 0;
-        fseek(file, fileOffset, SEEK_SET);
         while (readLen < cl) {
             int a = readChunkSize;
             if (cl-readLen < readChunkSize) {
