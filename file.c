@@ -1,16 +1,69 @@
+boolean writeHeaders(SOCKET msg_sock, int code, char msg[], struct set Settings, char range[], char content_type[], int content_length, char extra[]) {
+    char header[getIntTextLen(code)+strlen(msg)+strlen(range)+strlen(content_type)+strlen(extra)+getIntTextLen(content_length)+79];
+    memset(header, '\0', sizeof(header));
+    sprintf(header, "%s%i%s%s%s%i%s%s%s%s%s", "HTTP/1.1 ", code, " ", msg, "\r\nConnection: keep-alive\r\nAccept-Ranges: bytes\r\nContent-Length: ", content_length, "\r\n", content_type, range, extra, "\r\n");
+    int msg_len = send(msg_sock, header, sizeof(header)-1, 0);
+    if (msg_len == 0) {
+        printf("Client closed connection\n");
+        closesocket(msg_sock);
+        return FALSE;
+    }
+    return TRUE;
+}
 
-int render404(SOCKET msg_sock, char method[]) {
-    char header[] = "HTTP/1.1 404 Not Found\r\nAccept-Ranges: bytes\r\nContent-Length: 20\r\n\r\n";
-    char response[] = "404 - File not found";
-    if (! writeToSocket(msg_sock, header, NULL)) {
+int render404(SOCKET msg_sock, char method[], struct set Settings) {
+    if (!writeHeaders(msg_sock, 404, "Not Found", Settings, "", "", 20, "")) {
         return 0;
     }
+    char response[] = "404 - File not found";
     if (startsWith(method, "HEAD")) {
         return 1;
     }
     return send(msg_sock, response, sizeof(response)-1, 0);
 }
 
+int putData(char requestPath[], SOCKET msg_sock, struct set Settings, unsigned char data[], int cl) {
+    char path[300] = "";
+    char decodedPath[300] = "";
+    combineStrings(path, Settings.directory);
+    urldecode(decodedPath, requestPath);
+    combineStrings(path, decodedPath);
+    boolean dataWritten = FALSE;
+    FILE *file = fopen(path,"wb");
+    int written = 0;
+    int writeChunkSize = 1024;
+    while (written < cl) {
+        if (!dataWritten) {
+            int a = strlen(data);
+            if (strlen(data) > cl) {
+                a = cl;
+            }
+            fwrite(data, a, 1, file);
+            written += a;
+        } else {
+            int a = writeChunkSize;
+            if (cl-written < writeChunkSize) {
+                a = cl-written;
+            }
+            written += a;
+            unsigned char szBuff[a];
+            recv(msg_sock, szBuff, a, 0);
+            fwrite(szBuff, a, 1, file);
+        }
+    }
+    fclose(file);
+    return writeHeaders(msg_sock, 201, "Created", Settings, "", "", 0, "") ? 1 : 0;
+}
+
+int deleteData(char requestPath[], SOCKET msg_sock, struct set Settings) {
+    char path[300] = "";
+    char decodedPath[300] = "";
+    combineStrings(path, Settings.directory);
+    urldecode(decodedPath, requestPath);
+    combineStrings(path, decodedPath);
+    remove(path);
+    return writeHeaders(msg_sock, 200, "OK", Settings, "", "", 0, "") ? 1 : 0;
+}
 
 int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], struct set Settings, char method[]) {
     char path[300] = "";
@@ -20,7 +73,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     combineStrings(path, Settings.directory);
     urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
-    //printf("%s\n", path);
+    printf("%s\n", path);
     
     //first, get the length of the file
     FILE *file;
@@ -36,9 +89,9 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             combineStrings(indexPath, "index.html");
             file = fopen(indexPath, "rb");
             if (! endsWith(path, '/')) {
-                char header[strlen(requestPath)+89];
-                sprintf(header, "%s%s%s", "HTTP/1.1 301 Moved Permanently\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\nLocation: ", requestPath, "/\r\n\r\n");
-                return send(msg_sock, header, sizeof(header)-1, 0);
+                char header[strlen(requestPath)+13];
+                sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
+                return writeHeaders(msg_sock, 301, "Moved Permanently", Settings, "", "", 0, header) ? 1 : 0;
             }
             if (file != NULL) {
                 isIndex = TRUE;
@@ -50,10 +103,10 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             if (folder != NULL) {
                 isDirectory = TRUE;
             } else {
-                return render404(msg_sock, method);
+                return render404(msg_sock, method, Settings);
             }
         } else if (isDirectory != FALSE && isIndex != TRUE) {
-            return render404(msg_sock, method);
+            return render404(msg_sock, method, Settings);
         }
     } else {
         isDirectory = FALSE;
@@ -61,8 +114,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     if (isDirectory) {
         if (! endsWith(path, '/')) {
             char header[strlen(requestPath)+89];
-            sprintf(header, "%s%s%s", "HTTP/1.1 301 Moved Permanently\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\nLocation: ", requestPath, "/\r\n\r\n");
-            return send(msg_sock, header, sizeof(header)-1, 0);
+            return writeHeaders(msg_sock, 301, "Moved Permanently", Settings, "", "", 0, header) ? 1 : 0;
         }
         //render directory
         unsigned long len = Settings.directoryListingTemplateSize;
@@ -99,10 +151,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         }
         combineStrings(res, "\n</script>");
         closedir(folder);
-        int h1 = 101+getIntTextLen(len);
-        char header[h1];
-        sprintf(header, "%s%i%s", "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: ", len, "\r\n\r\n\r\n");
-        if (! writeToSocket(msg_sock, header, NULL)) {
+        if (!writeHeaders(msg_sock, 200, "OK", Settings, "", "Content-type: text/html; charset=utf-8\r\n", len-1, "")) {
             return 0;
         }
         if (startsWith(method, "HEAD")) {
@@ -127,11 +176,11 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         tolower(ext[i]);
         i++;
     }
-    char contentType[100];
-    char der[3000];
-    memset(der, '\0', sizeof(der));
+    char contentType[1000];
     getMime(ext, contentType);
     boolean hasContentType = (strlen(contentType) != 0);
+    char der[strlen(contentType)+16];
+    memset(der, '\0', sizeof(der));
     if (hasContentType) {
         sprintf(der, "%s%s%s", "Content-Type: ", contentType, "\r\n");
     }
@@ -159,29 +208,13 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             fileEndOffset = atoi(r);
             printf("%s\n", r);
             cl = fileEndOffset-fileOffset+1;
-            sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "\r\n");
+            sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "");
             code = 206;
         }
         fseek(file, fileOffset, SEEK_SET);
     }
-    int h1 = 81+getIntTextLen(cl)+getIntTextLen(code)+strLength(hea)+strLength(der);
-    char header[h1];
-    memset(header, '\0', sizeof(header));
-    sprintf(header, "%s%i%s%i%s", "HTTP/1.1 ", code, " OK\r\nAccept-Ranges: bytes\r\nContent-Length: ", cl, "\r\nConnection: keep-alive\r\n");
-    if (hasContentType) {
-        strcat(header, der);
-    }
-    if (hasRange) {
-        strcat(header, hea);
-    }
-    strcat(header, "\r\n");
-    int msg_len;
-    msg_len = send(msg_sock, header, sizeof(header)-1, 0);
-    if (msg_len == 0) {
-        //printf("Client closed connection\n");
-        closesocket(msg_sock);
-        fclose(file);
-        return 0;
+    if (!writeHeaders(msg_sock, code, (code = 200)?"OK":"Partial Content", Settings, hea, der, cl, "\r\n")) {
+        return 0;               
     }
     if (startsWith(method, "HEAD")) {
         return 1;
@@ -200,7 +233,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             readLen+=a;
             unsigned char res[a+1];
             fread(res, a, 1, file);
-            msg_len = send(msg_sock, res, sizeof(res)-1, 0);
+            int msg_len = send(msg_sock, res, sizeof(res)-1, 0);
             if (msg_len == 0) {
                 closesocket(msg_sock);
                 fclose(file);

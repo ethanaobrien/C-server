@@ -1,4 +1,3 @@
-
 boolean compareStrings(char a[], char b[]) {
     int y = strcmp(a, b);
     if (y == 0) {
@@ -111,3 +110,13 @@ void urldecode(char *dst, const char *src)
     *dst++ = '\0';
 }
 
+char pop(char in[], char delim[], char dest[]) {
+    char *ret = strstr(in, delim);
+    char a[sizeof(&dest)+strlen(delim)];
+    memset(a,'\0',strlen(a));
+    strcpy(a, ret);
+    memset(a,' ',strlen(delim));
+    for (int i=0; i<sizeof(&dest);i++) {
+        dest[i] = a[i+strlen(delim)];
+    }
+}
