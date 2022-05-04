@@ -11,9 +11,9 @@ void *onRequest(void *arguments) {
     char *p;
     char *q;
     char w[300] = "";
-    char path[300] = "";
+    char path[1000] = "";
     char method[100] = "";
-    char range[300] = "";
+    char range[1000] = "";
     int cl;
     boolean hasRange = FALSE;
     boolean hasBody = FALSE;
@@ -36,11 +36,11 @@ void *onRequest(void *arguments) {
             if (j == 0) {
                 strcpy(w, p);
             }
-            char e[100] = "";
+            char e[1000] = "";
             strcpy(e, p);
             i=0;
             while(e[i]) {
-                tolower(e[i]);
+                e[i] = tolower(e[i]);
                 i++;
             }
             if (startsWith("range", e)) {
@@ -86,7 +86,7 @@ void *onRequest(void *arguments) {
         } else if (startsWith(method, "DELETE")) {
             msg_len = deleteData(path, msg_sock, Settings);
         } else {
-            char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 20\r\n\r\n";
+            char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 24\r\n\r\n";
             char response[] = "405 - Method not allowed";
             if (! writeToSocket(msg_sock, header, NULL)) {
                 break;

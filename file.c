@@ -165,7 +165,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     unsigned long len = (unsigned long)ftell(file)+1;
     fseek(file, 0, SEEK_SET);
     
-    char ext[100] = "";
+    char ext[1000] = "";
     char *p = strtok(path, ".");
     while(p != NULL) {
         strcpy(ext, p);
@@ -173,7 +173,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     }
     i=0;
     while(ext[i]) {
-        tolower(ext[i]);
+        ext[i] = tolower(ext[i]);
         i++;
     }
     char contentType[1000];
@@ -193,27 +193,25 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         r = strtok(rangeHeader, "=");
         r = strtok(NULL, "=");
         if (endsWith(r, '-') || strchr(r, '-') == NULL) {
-            if (strchr(r, '-') != NULL) {
+            if (!endsWith(r, '-')) {
                 r = strtok(r, "-");
             }
             fileOffset = atoi(r);
             cl = len-fileOffset-1;
-            sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes ", fileOffset, '-', len-2, '/', len-1, "\r\n");
+            sprintf(hea, "%s%i%c%i%c%i%s", "Content-Range: bytes ", fileOffset, '-', len-2, '/', len-1, "\r\n");
             code = (fileOffset == 0) ? 200 : 206;
         } else {
             r = strtok(r, "-");
             fileOffset = atoi(r);
-            printf("%s\n", r);
             r = strtok(NULL, "-");
             fileEndOffset = atoi(r);
-            printf("%s\n", r);
             cl = fileEndOffset-fileOffset+1;
-            sprintf(hea, "%s%i%c%i%c%i%s", "content-range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "");
+            sprintf(hea, "%s%i%c%i%c%i%s", "Content-Range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "\r\n");
             code = 206;
         }
-        fseek(file, fileOffset, SEEK_SET);
+        fseek(file, fileOffset-1, SEEK_SET);
     }
-    if (!writeHeaders(msg_sock, code, (code = 200)?"OK":"Partial Content", Settings, hea, der, cl, "\r\n")) {
+    if (!writeHeaders(msg_sock, code, (code == 200)?"OK":"Partial Content", Settings, hea, der, cl, "")) {
         return 0;               
     }
     if (startsWith(method, "HEAD")) {
