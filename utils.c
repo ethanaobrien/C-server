@@ -61,7 +61,7 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
 
 boolean isItDirectory(struct set Settings, char entryName[], char requestPath[]) {
     struct _stat filestat;
-    char path[300] = "";
+    char path[500] = "";
     combineStrings(path, Settings.directory);
     combineStrings(path, requestPath);
     combineStrings(path, "/");
@@ -100,9 +100,6 @@ void urldecode(char *dst, const char *src)
                 b -= '0';
             *dst++ = 16*a+b;
             src+=3;
-        } else if (*src == '+') {
-            *dst++ = ' ';
-            src++;
         } else {
             *dst++ = *src++;
         }
@@ -110,8 +107,9 @@ void urldecode(char *dst, const char *src)
     *dst++ = '\0';
 }
 
-char pop(char in[], char delim[], char dest[]) {
+void pop(char in[], char delim[], char dest[]) {
     char *ret = strstr(in, delim);
+    if (ret == NULL) return;
     char a[sizeof(&dest)+strlen(delim)];
     memset(a,'\0',strlen(a));
     strcpy(a, ret);

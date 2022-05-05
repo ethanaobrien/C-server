@@ -35,11 +35,12 @@ int putData(char requestPath[], SOCKET msg_sock, struct set Settings, unsigned c
     while (written < cl) {
         if (!dataWritten) {
             int a = strlen(data);
-            if (strlen(data) > cl) {
+            if (strlen(data) >= cl) {
                 a = cl;
             }
             fwrite(data, a, 1, file);
             written += a;
+            dataWritten = TRUE;
         } else {
             int a = writeChunkSize;
             if (cl-written < writeChunkSize) {
@@ -73,7 +74,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     combineStrings(path, Settings.directory);
     urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
-    printf("%s\n", path);
+    //printf("%s\n", path);
     
     //first, get the length of the file
     FILE *file;
@@ -209,7 +210,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             sprintf(hea, "%s%i%c%i%c%i%s", "Content-Range: bytes: ", fileOffset, '-', fileEndOffset, '/', len-1, "\r\n");
             code = 206;
         }
-        fseek(file, fileOffset-1, SEEK_SET);
+        fseek(file, fileOffset, SEEK_SET);
     }
     if (!writeHeaders(msg_sock, code, (code == 200)?"OK":"Partial Content", Settings, hea, der, cl, "")) {
         return 0;               

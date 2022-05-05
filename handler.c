@@ -53,6 +53,7 @@ void *onRequest(void *arguments) {
                 strcpy(opsa, p);
                 char *y;
                 y = strtok(opsa, ":");
+                y = strtok(NULL, ":");
                 strcpy(opsa, y);
                 while (opsa[0] == ' ') {
                     int op = 0;
@@ -82,10 +83,13 @@ void *onRequest(void *arguments) {
         if (startsWith(method, "HEAD") || startsWith(method, "GET")) {
             msg_len = writeData(path, msg_sock, hasRange, range, Settings, method);
         } else if (startsWith(method, "PUT")) {
+            printf("PUT\n");
             msg_len = putData(path, msg_sock, Settings, data, cl);
         } else if (startsWith(method, "DELETE")) {
+            printf("DELETE\n");
             msg_len = deleteData(path, msg_sock, Settings);
         } else {
+            printf("OTHER\n");
             char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 24\r\n\r\n";
             char response[] = "405 - Method not allowed";
             if (! writeToSocket(msg_sock, header, NULL)) {
