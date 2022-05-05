@@ -213,9 +213,11 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         fseek(file, fileOffset, SEEK_SET);
     }
     if (!writeHeaders(msg_sock, code, (code == 200)?"OK":"Partial Content", Settings, hea, der, cl, "")) {
+        fclose(file);
         return 0;               
     }
     if (startsWith(method, "HEAD")) {
+        fclose(file);
         return 1;
     }
     int readChunkSize = 1024;
