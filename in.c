@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <stdbool.h>
-#include "window.c"
+//#include "window.c"
 
 struct set {
     boolean directoryListing;

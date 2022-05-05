@@ -36,18 +36,17 @@ void *onRequest(void *arguments) {
             if (j == 0) {
                 strcpy(w, p);
             }
-            char e[1000] = "";
-            strcpy(e, p);
             i=0;
-            while(e[i]) {
-                e[i] = tolower(e[i]);
+            while(p[i]) {
+                if (p[i] == ':') break;
+                p[i] = tolower(p[i]);
                 i++;
             }
-            if (startsWith("range", e)) {
+            if (startsWith("range", p)) {
                 strcpy(range, p);
                 hasRange = TRUE;
             }
-            if (startsWith("content-length", e)) {
+            if (startsWith("content-length", p)) {
                 char opsa[200] = "";
                 hasBody = TRUE;
                 strcpy(opsa, p);
