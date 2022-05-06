@@ -223,7 +223,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     int readChunkSize = 1024;
     if (cl > readChunkSize || hasRange) {
         unsigned long readLen = 0;
-        while (readLen < cl) {
+        while (readLen <= cl) {
             int a = readChunkSize;
             if (cl-readLen < readChunkSize) {
                 a = cl-readLen;
