@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <stdbool.h>
-//#include "window.c"
 
 struct set {
     boolean directoryListing;
@@ -21,7 +20,6 @@ struct arg_struct {
     SOCKET msg_sock;
     struct set Settings;
 };
-
 
 #include "handler.c"
 
@@ -53,9 +51,6 @@ int main(int argc, char *argv[]) {
         strcpy(Settings.directory, "C:");
         printf("Defaulting to C:/\n");
     }
-    
-    //pthread_t window_thread;
-    //pthread_create(&window_thread, NULL, makeWindow, (void*)NULL);
     
     int addr_len;
     struct sockaddr_in local, client_addr;
