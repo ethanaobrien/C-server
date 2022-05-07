@@ -3,7 +3,7 @@ boolean writeHeaders(SOCKET msg_sock, int code, char msg[], struct set Settings,
     memset(header, '\0', sizeof(header));
     sprintf(header, "%s%i%s%s%s%i%s%s%s%s%s", "HTTP/1.1 ", code, " ", msg, "\r\nConnection: keep-alive\r\nAccept-Ranges: bytes\r\nContent-Length: ", content_length, "\r\n", content_type, range, extra, "\r\n");
     int msg_len = send(msg_sock, header, sizeof(header)-1, 0);
-    if (msg_len == 0) {
+    if (msg_len == 0 || msg_len == -1) {
         printf("Client closed connection\n");
         closesocket(msg_sock);
         return FALSE;
@@ -228,14 +228,11 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             if (cl-readLen < readChunkSize) {
                 a = cl-readLen;
             }
-            if (readLen == cl) {
-                break;
-            }
             readLen+=a;
             unsigned char res[a+1];
             fread(res, a, 1, file);
             int msg_len = send(msg_sock, res, sizeof(res)-1, 0);
-            if (msg_len == 0) {
+            if (msg_len == 0 || msg_len == -1) {
                 closesocket(msg_sock);
                 fclose(file);
                 return 0;

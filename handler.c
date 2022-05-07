@@ -26,7 +26,7 @@ void *onRequest(void *arguments) {
         memset(szBuff, '\0', sizeof(szBuff));
         memset(data, '\0', sizeof(data));
         msg_len = recv(msg_sock, szBuff, sizeof(szBuff), 0);
-        if (msg_len == 0) {
+        if (msg_len == 0 || msg_len == -1) {
             break;
         }
         pop(szBuff, "\r\n\r\n", data);
@@ -82,21 +82,18 @@ void *onRequest(void *arguments) {
         if (startsWith(method, "HEAD") || startsWith(method, "GET")) {
             msg_len = writeData(path, msg_sock, hasRange, range, Settings, method);
         } else if (startsWith(method, "PUT")) {
-            printf("PUT\n");
             msg_len = putData(path, msg_sock, Settings, data, cl);
         } else if (startsWith(method, "DELETE")) {
-            printf("DELETE\n");
             msg_len = deleteData(path, msg_sock, Settings);
         } else {
-            printf("OTHER\n");
-            char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 24\r\n\r\n";
-            char response[] = "405 - Method not allowed";
+            char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n";
             if (! writeToSocket(msg_sock, header, NULL)) {
                 break;
             }
-            msg_len = send(msg_sock, response, sizeof(response)-1, 0);
+            //char response[] = "405 - Method not allowed";
+            //msg_len = send(msg_sock, response, sizeof(response)-1, 0);
         }
-        if (msg_len == 0) {
+        if (msg_len == 0 || msg_len == -1) {
             printf("Client closed connection\n");
             break;
         }

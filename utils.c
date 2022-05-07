@@ -48,7 +48,7 @@ int getIntTextLen(int a) {
 boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
     int msg_len;
     msg_len = send(msg_sock, res, strlen(res)-1, 0);
-    if (msg_len == 0) {
+    if (msg_len == 0 || msg_len == -1) {
         printf("Client closed connection\n");
         closesocket(msg_sock);
         if (file != NULL) {
