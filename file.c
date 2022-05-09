@@ -120,6 +120,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     if (isDirectory) {
         if (! endsWith(path, '/')) {
             char header[strlen(requestPath)+89];
+            sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
             return writeHeaders(msg_sock, 301, "Moved Permanently", Settings, "", "", 0, header) ? 1 : 0;
         }
         //render directory
