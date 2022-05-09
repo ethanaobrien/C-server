@@ -70,10 +70,11 @@ void *serverLoop(void *arguments) {
     free(arguments);
 }
 
-void makeServer(int port, struct set Settings) {
+pthread_t makeServer(int port, struct set Settings) {
     struct arg_struct *args = malloc(sizeof(struct arg_struct));
     args->Settings = Settings;
     args->port = port;
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, serverLoop, (void*)args);
+    return thread_id;
 }

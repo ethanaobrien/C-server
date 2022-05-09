@@ -1,7 +1,12 @@
 boolean writeHeaders(SOCKET msg_sock, int code, char msg[], struct set Settings, char range[], char content_type[], int content_length, char extra[]) {
-    char header[getIntTextLen(code)+strlen(msg)+strlen(range)+strlen(content_type)+strlen(extra)+getIntTextLen(content_length)+79];
+    char cors[32];
+    memset(cors, '\0', sizeof(cors));
+    if (Settings.cors) {
+        sprintf(cors, "Access-Control-Allow-Origin: *\r\n");
+    }
+    char header[getIntTextLen(code)+strlen(msg)+strlen(range)+strlen(content_type)+strlen(extra)+strlen(cors)+getIntTextLen(content_length)+79];
     memset(header, '\0', sizeof(header));
-    sprintf(header, "%s%i%s%s%s%i%s%s%s%s%s", "HTTP/1.1 ", code, " ", msg, "\r\nConnection: keep-alive\r\nAccept-Ranges: bytes\r\nContent-Length: ", content_length, "\r\n", content_type, range, extra, "\r\n");
+    sprintf(header, "HTTP/1.1 %i %s\r\nConnection: keep-alive\r\nAccept-Ranges: bytes\r\nContent-Length: %i\r\n%s%s%s%s\r\n", code, msg, content_length, cors, content_type, range, extra);
     int msg_len = send(msg_sock, header, sizeof(header)-1, 0);
     if (msg_len == 0 || msg_len == -1) {
         printf("Client closed connection\n");

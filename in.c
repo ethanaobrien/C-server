@@ -11,6 +11,7 @@
 struct set {
     boolean directoryListing;
     boolean index;
+    boolean cors;
     char directory[300];
     char directoryListingTemplate[20000];
     unsigned long directoryListingTemplateSize;
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     
     Settings.directoryListing = TRUE;
     Settings.index = FALSE;
+    Settings.cors = FALSE;
     
     FILE *template;
     template = fopen("./directory-listing-template.html", "rb");
@@ -45,24 +47,14 @@ int main(int argc, char *argv[]) {
     fread(Settings.directoryListingTemplate, 20000, 1, template);
     fclose(template);
     Settings.directoryListingTemplateSize = strlen(Settings.directoryListingTemplate);
-    
-    
     if (argc > 1) {
         strcpy(Settings.directory, argv[1]);
     } else {
         strcpy(Settings.directory, "C:");
         printf("Defaulting to C:/\n");
     }
-    makeServer(DEFAULT_PORT, Settings);
-    int ch;
-    while(1) {
-        ch = getchar();
-        if (ch < 0) {
-            clearerr(stdin);
-        } else {
-            //printf("%i", ch);
-        }
-    }
+    pthread_t main_server = makeServer(DEFAULT_PORT, Settings);
+    pthread_join(main_server, NULL);
     
 }
 
