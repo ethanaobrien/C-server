@@ -71,11 +71,7 @@ boolean isItDirectory(struct set Settings, char entryName[], char requestPath[])
 }
 
 boolean endsWith(char string1[], char string2) {
-    int i = 1;
-    while (string1[strlen(string1)-i] == '\0') {
-        i++;
-    }
-    return string1[strlen(string1)-i] == string2;
+    return string1[strlen(string1)-1] == string2;
 }
 
 boolean startsWith(const char *pre, const char *str)
