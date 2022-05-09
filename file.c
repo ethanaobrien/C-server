@@ -225,31 +225,24 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         fclose(file);
         return 1;
     }
-    int readChunkSize = 1024;
-    if (cl > readChunkSize || hasRange) {
-        unsigned long readLen = 0;
-        while (readLen <= cl) {
-            int a = readChunkSize;
-            if (cl-readLen < readChunkSize) {
-                a = cl-readLen;
-            }
-            readLen+=a;
-            unsigned char res[a+1];
-            fread(res, a, 1, file);
-            int msg_len = send(msg_sock, res, sizeof(res)-1, 0);
-            if (msg_len == 0 || msg_len == -1) {
-                closesocket(msg_sock);
-                fclose(file);
-                return 0;
-            }
+    int readChunkSize = 1024*8;
+    unsigned long readLen = 0;
+    while (readLen <= cl) {
+        int a = readChunkSize;
+        if (cl-readLen < readChunkSize) {
+            a = cl-readLen;
         }
-        fclose(file);
-        return 1;
-    } else {
-        unsigned char res[len];
-        fread(res, len, 1, file);
-        fclose(file);
-        return send(msg_sock, res, sizeof(res)-1, 0);
+        readLen+=a;
+        unsigned char res[a+1];
+        fread(res, a, 1, file);
+        int msg_len = send(msg_sock, res, sizeof(res)-1, 0);
+        if (msg_len == 0 || msg_len == -1) {
+            closesocket(msg_sock);
+            fclose(file);
+            return 0;
+        }
     }
+    fclose(file);
+    return 1;
 }
 
