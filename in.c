@@ -12,6 +12,7 @@ struct set {
     boolean directoryListing;
     boolean index;
     boolean cors;
+    boolean logRequests;
     char directory[300];
     char directoryListingTemplate[20000];
     unsigned long directoryListingTemplateSize;
@@ -35,6 +36,7 @@ int main(int argc, char *argv[]) {
     Settings.directoryListing = TRUE;
     Settings.index = FALSE;
     Settings.cors = FALSE;
+    Settings.logRequests = FALSE;
     
     FILE *template;
     template = fopen("./directory-listing-template.html", "rb");

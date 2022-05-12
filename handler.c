@@ -94,7 +94,6 @@ void *onRequest(void *arguments) {
             //msg_len = send(msg_sock, response, sizeof(response)-1, 0);
         }
         if (msg_len == 0 || msg_len == -1) {
-            printf("Client closed connection\n");
             break;
         }
         if (msg_len == SOCKET_ERROR) {
