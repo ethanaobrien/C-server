@@ -8,7 +8,7 @@ void *serverLoop(void *arguments) {
     int addr_len;
     struct sockaddr_in local, client_addr;
 
-    SOCKET sock, msg_sock;
+    SOCKET msg_sock;
     WSADATA wsaData;
 
     if (WSAStartup(0x202, &wsaData) == SOCKET_ERROR) {
@@ -46,8 +46,12 @@ void *serverLoop(void *arguments) {
     while (1) {
         addr_len = sizeof(client_addr);
         msg_sock = accept(sock, (struct sockaddr * ) &client_addr, &addr_len);
+        
         if (msg_sock == INVALID_SOCKET) {
-            fprintf(stderr, "accept() failed with error %d\n", WSAGetLastError());
+            free(arguments);
+            if (isRunning) {
+                fprintf(stderr, "accept() failed with error %d\n", WSAGetLastError());
+            }
             WSACleanup();
             return (void *)-1;
         }
@@ -66,8 +70,6 @@ void *serverLoop(void *arguments) {
         pthread_create(&thread_id, NULL, onRequest, (void*)args);
         
     }
-    WSACleanup();
-    free(arguments);
 }
 
 pthread_t makeServer(int port, struct set Settings) {

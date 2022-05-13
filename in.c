@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+boolean isRunning = TRUE;
+
 struct set {
     boolean directoryListing;
     boolean index;
@@ -24,15 +26,19 @@ struct arg_struct {
     int port;
 };
 
+#define DEFAULT_PORT 8887
+
+SOCKET sock;
+
 #include "handler.c"
 #include "server.c"
 
-#define DEFAULT_PORT 8887
+pthread_t main_server;
+struct set Settings;
+
+#include "window.c"
 
 int main(int argc, char *argv[]) {
-    
-    struct set Settings;
-    
     Settings.directoryListing = TRUE;
     Settings.index = FALSE;
     Settings.cors = FALSE;
@@ -55,8 +61,11 @@ int main(int argc, char *argv[]) {
         strcpy(Settings.directory, "C:");
         printf("Defaulting to C:/\n");
     }
-    pthread_t main_server = makeServer(DEFAULT_PORT, Settings);
-    pthread_join(main_server, NULL);
-    
+    main_server = makeServer(DEFAULT_PORT, Settings);
+    if (argc != 1) {
+        pthread_join(main_server, NULL);
+    } else {
+        makeWindow();
+    }
 }
 
