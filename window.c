@@ -26,23 +26,34 @@ void paintWindow(HWND hwnd) {
         sprintf(msg, "Not Running");
     }
     TextOut(hdc, 20, 20, TEXT(msg), strlen(msg));
+    TextOut(hdc, 20, 130, TEXT("Port: "), strlen("Port: "));
     EndPaint(hwnd, &ps);
     ReleaseDC(hwnd, hdc);
 }
 
+HWND hwndButton, portInput;
+
 void createButton(HWND hwnd) {
-    HWND hwndButton = CreateWindow("BUTTON", "toggle",
+    hwndButton = CreateWindow("BUTTON", "toggle",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 45, 100, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    portInput = CreateWindow(TEXT("Edit"), TEXT("8887"), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 130, 140, 20, hwnd, NULL, NULL, NULL); 
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg != 512 && msg != 32 && msg != 127 && msg != 132 && msg != 307) {
+        //printf("%i\n", msg);
+    }
     switch(msg)
     {
         case WM_COMMAND: {
-            isRunning = !isRunning;
-            toggleServer();
-            PrintWindow(hwnd, NULL, 0);
+            if ((int*)lParam == (int*)hwndButton) {
+                isRunning = !isRunning;
+                toggleServer();
+                PrintWindow(hwnd, NULL, 0);
+            } else if ((int*)lParam == (int*)portInput) {
+                printf("%i\n", wParam);
+            }
         }
         break;
         case WM_CLOSE:
