@@ -84,13 +84,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
-
+    int width = 410, height = 700;
+    
     hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         g_szClassName,
         "Simple Server",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 410, 700,
+        (GetSystemMetrics(SM_CXSCREEN)/2)-(width/2), (GetSystemMetrics(SM_CYSCREEN)/2)-(height/2), width, height,
         NULL, NULL, hInstance, NULL);
         
     createButton(hwnd);
