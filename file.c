@@ -1,4 +1,4 @@
-boolean writeHeaders(SOCKET msg_sock, int code, char msg[], struct set Settings, char range[], char content_type[], int content_length, char extra[]) {
+boolean writeHeaders(SOCKET msg_sock, int code, char msg[], char range[], char content_type[], int content_length, char extra[]) {
     char cors[32];
     memset(cors, '\0', sizeof(cors));
     if (Settings.cors) {
@@ -15,8 +15,8 @@ boolean writeHeaders(SOCKET msg_sock, int code, char msg[], struct set Settings,
     return TRUE;
 }
 
-int render404(SOCKET msg_sock, char method[], struct set Settings) {
-    if (!writeHeaders(msg_sock, 404, "Not Found", Settings, "", "", 20, "")) {
+int render404(SOCKET msg_sock, char method[]) {
+    if (!writeHeaders(msg_sock, 404, "Not Found", "", "", 20, "")) {
         return 0;
     }
     char response[] = "404 - File not found";
@@ -26,7 +26,7 @@ int render404(SOCKET msg_sock, char method[], struct set Settings) {
     return send(msg_sock, response, sizeof(response)-1, 0);
 }
 
-int putData(char requestPath[], SOCKET msg_sock, struct set Settings, unsigned char data[], int cl) {
+int putData(char requestPath[], SOCKET msg_sock, unsigned char data[], int cl) {
     char path[300] = "";
     char decodedPath[300] = "";
     combineStrings(path, Settings.directory);
@@ -60,10 +60,10 @@ int putData(char requestPath[], SOCKET msg_sock, struct set Settings, unsigned c
         }
     }
     fclose(file);
-    return writeHeaders(msg_sock, 201, "Created", Settings, "", "", 0, "") ? 1 : 0;
+    return writeHeaders(msg_sock, 201, "Created", "", "", 0, "") ? 1 : 0;
 }
 
-int deleteData(char requestPath[], SOCKET msg_sock, struct set Settings) {
+int deleteData(char requestPath[], SOCKET msg_sock) {
     char path[300] = "";
     char decodedPath[300] = "";
     combineStrings(path, Settings.directory);
@@ -73,10 +73,10 @@ int deleteData(char requestPath[], SOCKET msg_sock, struct set Settings) {
         printf("DELETE: %s\n", path);
     }
     remove(path);
-    return writeHeaders(msg_sock, 200, "OK", Settings, "", "", 0, "") ? 1 : 0;
+    return writeHeaders(msg_sock, 200, "OK", "", "", 0, "") ? 1 : 0;
 }
 
-int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], struct set Settings, char method[]) {
+int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], char method[]) {
     char path[300] = "";
     char decodedPath[300] = "";
     int i=0, j=0;
@@ -104,7 +104,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             if (! endsWith(path, '/')) {
                 char header[strlen(requestPath)+13];
                 sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
-                return writeHeaders(msg_sock, 301, "Moved Permanently", Settings, "", "", 0, header) ? 1 : 0;
+                return writeHeaders(msg_sock, 301, "Moved Permanently", "", "", 0, header) ? 1 : 0;
             }
             if (file != NULL) {
                 isIndex = TRUE;
@@ -116,10 +116,10 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             if (folder != NULL) {
                 isDirectory = TRUE;
             } else {
-                return render404(msg_sock, method, Settings);
+                return render404(msg_sock, method);
             }
         } else if (isDirectory != FALSE && isIndex != TRUE) {
-            return render404(msg_sock, method, Settings);
+            return render404(msg_sock, method);
         }
     } else {
         isDirectory = FALSE;
@@ -128,7 +128,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         if (! endsWith(path, '/')) {
             char header[strlen(requestPath)+89];
             sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
-            return writeHeaders(msg_sock, 301, "Moved Permanently", Settings, "", "", 0, header) ? 1 : 0;
+            return writeHeaders(msg_sock, 301, "Moved Permanently", "", "", 0, header) ? 1 : 0;
         }
         //render directory
         unsigned long len = Settings.directoryListingTemplateSize;
@@ -155,7 +155,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         while((entry = readdir(folder))) {
             char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
             char isDir[6] = "";
-            if (isItDirectory(Settings, entry->d_name, requestPath)) {
+            if (isItDirectory(entry->d_name, requestPath)) {
                 strcpy(isDir, "true ");
             } else {
                 strcpy(isDir, "false");
@@ -165,7 +165,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         }
         combineStrings(res, "\n</script>");
         closedir(folder);
-        if (!writeHeaders(msg_sock, 200, "OK", Settings, "", "Content-type: text/html; charset=utf-8\r\n", len-1, "")) {
+        if (!writeHeaders(msg_sock, 200, "OK", "", "Content-type: text/html; charset=utf-8\r\n", len-1, "")) {
             return 0;
         }
         if (startsWith(method, "HEAD")) {
@@ -225,7 +225,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         }
         fseek(file, fileOffset, SEEK_SET);
     }
-    if (!writeHeaders(msg_sock, code, (code == 200)?"OK":"Partial Content", Settings, hea, der, cl, "")) {
+    if (!writeHeaders(msg_sock, code, (code == 200)?"OK":"Partial Content", hea, der, cl, "")) {
         fclose(file);
         return 0;               
     }

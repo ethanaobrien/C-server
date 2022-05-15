@@ -59,7 +59,7 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
     return TRUE;
 }
 
-boolean isItDirectory(struct set Settings, char entryName[], char requestPath[]) {
+boolean isItDirectory(char entryName[], char requestPath[]) {
     struct _stat filestat;
     char path[500] = "";
     combineStrings(path, Settings.directory);

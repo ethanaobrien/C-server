@@ -6,7 +6,6 @@ void *onRequest(void *arguments) {
     
     struct arg_struct *args = arguments;
     SOCKET msg_sock = args->msg_sock;
-    struct set Settings = args->Settings;
     
     char *p;
     char *q;
@@ -80,11 +79,11 @@ void *onRequest(void *arguments) {
         q = strtok(path, "?");
         strcpy(path, q);
         if (startsWith(method, "HEAD") || startsWith(method, "GET")) {
-            msg_len = writeData(path, msg_sock, hasRange, range, Settings, method);
+            msg_len = writeData(path, msg_sock, hasRange, range, method);
         } else if (startsWith(method, "PUT")) {
-            msg_len = putData(path, msg_sock, Settings, data, cl);
+            msg_len = putData(path, msg_sock, data, cl);
         } else if (startsWith(method, "DELETE")) {
-            msg_len = deleteData(path, msg_sock, Settings);
+            msg_len = deleteData(path, msg_sock);
         } else {
             char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n";
             if (! writeToSocket(msg_sock, header, NULL)) {

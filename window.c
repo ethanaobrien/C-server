@@ -5,8 +5,8 @@
 const char g_szClassName[] = "myWindowClass";
 
 void toggleServer() {
-    if (isRunning) {
-        main_server = makeServer(DEFAULT_PORT, Settings);
+    if (Settings.isRunning) {
+        main_server = makeServer(Settings.port, Settings);
     } else {
         pthread_cancel(main_server);
         closesocket(sock);
@@ -16,12 +16,20 @@ void toggleServer() {
 void paintWindow(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
-    char msg[isRunning?7:11];
+    char msg[Settings.error?5:(Settings.isRunning?7:11)];
     memset(msg, '\0', sizeof(msg));
-    if (isRunning) {
-        char portMsg[] = "open http://127.0.0.1:8887 in your browser";
+    if (Settings.error) {
+        sprintf(msg, "Error");
+        char portMsg[41+getIntTextLen(Settings.port)];
+        sprintf(portMsg, "There was an error listening on the port %i", Settings.port);
+        TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
+    } else if (Settings.isRunning) {
+        char portMsg[38+getIntTextLen(Settings.port)];
+        sprintf(portMsg, "Open http://127.0.0.1:%i in your browser", Settings.port);
         TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
         sprintf(msg, "Running");
+        char dirMsg[] = "Currently Serving C:/";
+        TextOut(hdc, 20, 160, TEXT(dirMsg), strlen(dirMsg));
     } else {
         sprintf(msg, "Not Running");
     }
@@ -33,6 +41,17 @@ void paintWindow(HWND hwnd) {
 
 HWND hwndButton, portInput;
 
+boolean onlyInts(char text[]) {
+    int i=0;
+    while (text[i]) {
+        if (text[i] != '1' && text[i] != '2' && text[i] != '3' && text[i] != '4' && text[i] != '5' && text[i] != '6' && text[i] != '7' && text[i] != '8' && text[i] != '9' && text[i] != '0') {
+            return TRUE;
+        }
+        i++;
+    }
+    return FALSE;
+}
+
 void createButton(HWND hwnd) {
     hwndButton = CreateWindow("BUTTON", "toggle",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
@@ -41,18 +60,28 @@ void createButton(HWND hwnd) {
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if (msg != 512 && msg != 32 && msg != 127 && msg != 132 && msg != 307) {
-        //printf("%i\n", msg);
-    }
     switch(msg)
     {
         case WM_COMMAND: {
             if ((int*)lParam == (int*)hwndButton) {
-                isRunning = !isRunning;
+                Settings.isRunning = !Settings.isRunning;
                 toggleServer();
                 PrintWindow(hwnd, NULL, 0);
             } else if ((int*)lParam == (int*)portInput) {
-                printf("%i\n", wParam);
+                if (wParam == 50331648) {
+                    int len = GetWindowTextLength(portInput) + 1;
+                    char text[len];
+                    memset(text, '\0', sizeof(text));
+                    GetWindowText(portInput, text, len);
+                    boolean hasInvalid = onlyInts(text);
+                    int a = atoi(text);
+                    if (hasInvalid) {
+                        memset(text, '\0', sizeof(text));
+                        sprintf(text, "%i", a);
+                        SetWindowText(portInput, TEXT(text));
+                    }
+                    Settings.port = a;
+                }
             }
         }
         break;

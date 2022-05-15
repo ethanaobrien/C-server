@@ -8,25 +8,23 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
-boolean isRunning = TRUE;
-
 struct set {
     boolean directoryListing;
     boolean index;
     boolean cors;
     boolean logRequests;
+    boolean error;
     char directory[300];
     char directoryListingTemplate[20000];
     unsigned long directoryListingTemplateSize;
+    int port;
+    boolean isRunning;
 };
 
 struct arg_struct {
     SOCKET msg_sock;
-    struct set Settings;
-    int port;
 };
-
-#define DEFAULT_PORT 8887
+struct set Settings;
 
 SOCKET sock;
 
@@ -34,15 +32,18 @@ SOCKET sock;
 #include "server.c"
 
 pthread_t main_server;
-struct set Settings;
 
 #include "window.c"
 
 int main(int argc, char *argv[]) {
+    Settings.port = 8887;
     Settings.directoryListing = TRUE;
     Settings.index = FALSE;
     Settings.cors = FALSE;
     Settings.logRequests = FALSE;
+    Settings.error = FALSE;
+    Settings.isRunning = TRUE;
+    strcpy(Settings.directory, "C:");
     
     FILE *template;
     template = fopen("./directory-listing-template.html", "rb");
@@ -55,17 +56,7 @@ int main(int argc, char *argv[]) {
     fread(Settings.directoryListingTemplate, 20000, 1, template);
     fclose(template);
     Settings.directoryListingTemplateSize = strlen(Settings.directoryListingTemplate);
-    if (argc > 1) {
-        strcpy(Settings.directory, argv[1]);
-    } else {
-        strcpy(Settings.directory, "C:");
-        printf("Defaulting to C:/\n");
-    }
-    main_server = makeServer(DEFAULT_PORT, Settings);
-    if (argc != 1) {
-        pthread_join(main_server, NULL);
-    } else {
-        makeWindow();
-    }
+    main_server = makeServer();
+    makeWindow();
 }
 
