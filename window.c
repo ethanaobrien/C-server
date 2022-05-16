@@ -45,11 +45,11 @@ boolean onlyInts(char text[]) {
     int i=0;
     while (text[i]) {
         if (text[i] != '1' && text[i] != '2' && text[i] != '3' && text[i] != '4' && text[i] != '5' && text[i] != '6' && text[i] != '7' && text[i] != '8' && text[i] != '9' && text[i] != '0') {
-            return TRUE;
+            return FALSE;
         }
         i++;
     }
-    return FALSE;
+    return TRUE;
 }
 
 void createButton(HWND hwnd) {
@@ -73,9 +73,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     char text[len];
                     memset(text, '\0', sizeof(text));
                     GetWindowText(portInput, text, len);
-                    boolean hasInvalid = onlyInts(text);
+                    boolean valid = onlyInts(text);
                     int a = atoi(text);
-                    if (hasInvalid) {
+                    if (!valid) {
                         memset(text, '\0', sizeof(text));
                         sprintf(text, "%i", a);
                         SetWindowText(portInput, TEXT(text));
