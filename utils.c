@@ -10,6 +10,20 @@ void combineStrings(char s1[], char s2[]) {
     strcat(s1, s2);
 }
 
+//from https://stackoverflow.com/a/70358229/15318223
+void create_file_path_dirs(char *file_path) {
+    char *dir_path = (char *) malloc(strlen(file_path) + 1);
+    char *next_sep = strchr(file_path, '/');
+    while (next_sep != NULL) {
+        int dir_path_len = next_sep - file_path;
+        memcpy(dir_path, file_path, dir_path_len);
+        dir_path[dir_path_len] = '\0';
+        mkdir(dir_path);
+        next_sep = strchr(next_sep + 1, '/');
+    }
+    free(dir_path);
+}
+
 int strLength(char str[]) {
     int i=0;
     for (i=0;i<strlen(str);i++) {
@@ -61,7 +75,7 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
 
 boolean isItDirectory(char entryName[], char requestPath[]) {
     struct _stat filestat;
-    char path[500] = "";
+    char path[MAX_PATH_LEN] = "";
     combineStrings(path, Settings.directory);
     combineStrings(path, requestPath);
     combineStrings(path, "/");

@@ -27,8 +27,8 @@ int render404(SOCKET msg_sock, char method[]) {
 }
 
 int putData(char requestPath[], SOCKET msg_sock, unsigned char data[], int cl) {
-    char path[300] = "";
-    char decodedPath[300] = "";
+    char path[MAX_PATH_LEN] = "";
+    char decodedPath[MAX_PATH_LEN] = "";
     combineStrings(path, Settings.directory);
     urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
@@ -36,7 +36,8 @@ int putData(char requestPath[], SOCKET msg_sock, unsigned char data[], int cl) {
         printf("PUT: %s\n", path);
     }
     boolean dataWritten = FALSE;
-    FILE *file = fopen(path,"wb");
+    create_file_path_dirs(path);
+    FILE *file = fopen(path, "wb");
     int written = 0;
     int writeChunkSize = 1024;
     while (written < cl) {
@@ -64,8 +65,8 @@ int putData(char requestPath[], SOCKET msg_sock, unsigned char data[], int cl) {
 }
 
 int deleteData(char requestPath[], SOCKET msg_sock) {
-    char path[300] = "";
-    char decodedPath[300] = "";
+    char path[MAX_PATH_LEN] = "";
+    char decodedPath[MAX_PATH_LEN] = "";
     combineStrings(path, Settings.directory);
     urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
@@ -76,9 +77,25 @@ int deleteData(char requestPath[], SOCKET msg_sock) {
     return writeHeaders(msg_sock, 200, "OK", "", "", 0, "") ? 1 : 0;
 }
 
+int handleUnsupported(SOCKET msg_sock) {
+    if (!writeHeaders(msg_sock, 405, "Method Not Allowed", "", "", 24, "Allow: GET, HEAD, PUT, DELETE\r\n")) {
+        return 0;
+    }
+    char response[] = "405 - Method not allowed";
+    return send(msg_sock, response, sizeof(response)-1, 0);
+}
+
+int noDirectoryChosen(SOCKET msg_sock) {
+    if (!writeHeaders(msg_sock, 500, "Internal Server Error", "", "", 23, "")) {
+        return 0;
+    }
+    char response[] = "Directory is not chosen";
+    return send(msg_sock, response, sizeof(response)-1, 0);
+}
+
 int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], char method[]) {
-    char path[300] = "";
-    char decodedPath[300] = "";
+    char path[MAX_PATH_LEN] = "";
+    char decodedPath[MAX_PATH_LEN] = "";
     int i=0, j=0;
     int length = 0;
     combineStrings(path, Settings.directory);
@@ -96,7 +113,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     file = fopen(path, "rb");
     if (file == NULL) {
         if (Settings.index) {
-            char indexPath[300] = "";
+            char indexPath[MAX_PATH_LEN] = "";
             combineStrings(indexPath, Settings.directory);
             combineStrings(indexPath, requestPath);
             combineStrings(indexPath, "index.html");

@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <winuser.h>
 #include <commdlg.h>
+#include <ShlObj.h>
 
 const char g_szClassName[] = "myWindowClass";
 
@@ -29,11 +30,16 @@ void paintWindow(HWND hwnd) {
         sprintf(portMsg, "Open http://127.0.0.1:%i in your browser", Settings.port);
         TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
         sprintf(msg, "Running");
+    } else {
+        sprintf(msg, "Not Running");
+    }
+    if (strlen(Settings.directory) > 0) {
         char dirMsg[18+strlen(Settings.directory)];
         sprintf(dirMsg, "Currently Serving %s", Settings.directory);
         TextOut(hdc, 20, 225, TEXT(dirMsg), strlen(dirMsg));
     } else {
-        sprintf(msg, "Not Running");
+        char dirMsg[] = "Directory not chosen";
+        TextOut(hdc, 20, 225, TEXT(dirMsg), strlen(dirMsg));
     }
     TextOut(hdc, 20, 20, TEXT(msg), strlen(msg));
     TextOut(hdc, 20, 135, TEXT("Port: "), strlen("Port: "));
@@ -61,10 +67,12 @@ void createButton(HWND hwnd) {
     hwndChooseFolder = CreateWindow("BUTTON", "Choose Directory",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 170, 125, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-    portInput = CreateWindow(TEXT("Edit"), TEXT("8887"), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 130, 140, 20, hwnd, NULL, NULL, NULL); 
+    char a[getIntTextLen(Settings.port)];
+    memset(a, '\0', sizeof(a));
+    sprintf(a, "%i", Settings.port);
+    portInput = CreateWindow(TEXT("Edit"), TEXT(a), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 130, 140, 20, hwnd, NULL, NULL, NULL); 
 }
 
-#include <commdlg.h>
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch(msg)
     {
@@ -74,25 +82,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 toggleServer();
                 PrintWindow(hwnd, NULL, 0);
             } else if ((int*)lParam == (int*)hwndChooseFolder) {
-                OPENFILENAMEA ofn;
-                char fileName[300] = "";
-                ZeroMemory(&ofn, sizeof(ofn));
-                ofn.lStructSize = sizeof(ofn);
-                ofn.hwndOwner = NULL;
-                ofn.lpstrFile = fileName;
-                ofn.lpstrFile[0] = '\0';
-                ofn.nMaxFile = sizeof(Settings.directory);
-                ofn.nFilterIndex = 1;
-                ofn.lpstrFileTitle = NULL;
-                ofn.nMaxFileTitle = 0;
-                ofn.lpstrInitialDir = NULL;
-                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-                ofn.lpstrFilter = "All Files (*.*)\0*.*\0";
-                ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-                ofn.lpstrDefExt = "";
-                if (GetOpenFileName(&ofn)) {
-                    printf("%s", fileName);
+                char fileName[sizeof(Settings.directory)];
+                memset(fileName, '\0', sizeof(fileName));
+                BROWSEINFO bInfo;
+                bInfo.hwndOwner = NULL;
+                bInfo.pidlRoot = NULL;
+                bInfo.pszDisplayName = fileName;
+                bInfo.lpszTitle = "Select Folder To Serve";
+                bInfo.ulFlags = 0;
+                bInfo.lpfn = NULL;
+                bInfo.lParam = 0;
+                bInfo.iImage = -1;
+                LPITEMIDLIST lpItem = SHBrowseForFolder(&bInfo);
+                if (lpItem != NULL) {
+                    SHGetPathFromIDList(lpItem, fileName);
+                    if (strlen(fileName) == 0) return 0;
+                    memset(Settings.directory, '\0', sizeof(Settings.directory));
+                    strcpy(Settings.directory, fileName);
                     PrintWindow(hwnd, NULL, 0);
+                    saveSettings();
                 }
             } else if ((int*)lParam == (int*)portInput) {
                 if (wParam == 50331648) {
@@ -108,6 +116,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         SetWindowText(portInput, TEXT(text));
                     }
                     Settings.port = a;
+                    saveSettings();
                 }
             }
         }

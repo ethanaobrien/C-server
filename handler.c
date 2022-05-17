@@ -10,7 +10,7 @@ void *onRequest(void *arguments) {
     char *p;
     char *q;
     char w[300] = "";
-    char path[1000] = "";
+    char path[MAX_PATH_LEN] = "";
     char method[100] = "";
     char range[1000] = "";
     int cl;
@@ -78,19 +78,16 @@ void *onRequest(void *arguments) {
         }
         q = strtok(path, "?");
         strcpy(path, q);
-        if (startsWith(method, "HEAD") || startsWith(method, "GET")) {
+        if (strlen(Settings.directory) <= 0) {
+            msg_len = noDirectoryChosen(msg_sock);
+        } else if (startsWith(method, "HEAD") || startsWith(method, "GET")) {
             msg_len = writeData(path, msg_sock, hasRange, range, method);
         } else if (startsWith(method, "PUT")) {
             msg_len = putData(path, msg_sock, data, cl);
         } else if (startsWith(method, "DELETE")) {
             msg_len = deleteData(path, msg_sock);
         } else {
-            char header[] = "HTTP/1.1 405 Method Not Allowed\r\nAllow: GET, HEAD, PUT, DELETE\r\nAccept-Ranges: bytes\r\nContent-Length: 0\r\n\r\n";
-            if (! writeToSocket(msg_sock, header, NULL)) {
-                break;
-            }
-            //char response[] = "405 - Method not allowed";
-            //msg_len = send(msg_sock, response, sizeof(response)-1, 0);
+            msg_len = handleUnsupported(msg_sock);
         }
         if (msg_len == 0 || msg_len == -1) {
             break;

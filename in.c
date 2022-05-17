@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#define MAX_PATH_LEN 2048
 
 struct set {
     boolean directoryListing;
@@ -14,7 +15,7 @@ struct set {
     boolean cors;
     boolean logRequests;
     boolean error;
-    char directory[300];
+    char directory[MAX_PATH_LEN];
     char directoryListingTemplate[20000];
     unsigned long directoryListingTemplateSize;
     int port;
@@ -29,6 +30,7 @@ struct set Settings;
 SOCKET sock;
 
 #include "handler.c"
+#include "settings.c"
 #include "server.c"
 
 pthread_t main_server;
@@ -43,7 +45,7 @@ int main(int argc, char *argv[]) {
     Settings.logRequests = FALSE;
     Settings.error = FALSE;
     Settings.isRunning = TRUE;
-    strcpy(Settings.directory, "C:");
+    loadSettings();
     
     FILE *template;
     template = fopen("./directory-listing-template.html", "rb");
