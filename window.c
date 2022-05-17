@@ -1,6 +1,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <winuser.h>
+#include <commdlg.h>
 
 const char g_szClassName[] = "myWindowClass";
 
@@ -28,18 +29,19 @@ void paintWindow(HWND hwnd) {
         sprintf(portMsg, "Open http://127.0.0.1:%i in your browser", Settings.port);
         TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
         sprintf(msg, "Running");
-        char dirMsg[] = "Currently Serving C:/";
-        TextOut(hdc, 20, 160, TEXT(dirMsg), strlen(dirMsg));
+        char dirMsg[18+strlen(Settings.directory)];
+        sprintf(dirMsg, "Currently Serving %s", Settings.directory);
+        TextOut(hdc, 20, 225, TEXT(dirMsg), strlen(dirMsg));
     } else {
         sprintf(msg, "Not Running");
     }
     TextOut(hdc, 20, 20, TEXT(msg), strlen(msg));
-    TextOut(hdc, 20, 130, TEXT("Port: "), strlen("Port: "));
+    TextOut(hdc, 20, 135, TEXT("Port: "), strlen("Port: "));
     EndPaint(hwnd, &ps);
     ReleaseDC(hwnd, hdc);
 }
 
-HWND hwndButton, portInput;
+HWND hwndButton, portInput, hwndChooseFolder;
 
 boolean onlyInts(char text[]) {
     int i=0;
@@ -53,12 +55,16 @@ boolean onlyInts(char text[]) {
 }
 
 void createButton(HWND hwnd) {
-    hwndButton = CreateWindow("BUTTON", "toggle",
+    hwndButton = CreateWindow("BUTTON", "Toggle",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 45, 100, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    hwndChooseFolder = CreateWindow("BUTTON", "Choose Directory",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        20, 170, 125, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     portInput = CreateWindow(TEXT("Edit"), TEXT("8887"), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 130, 140, 20, hwnd, NULL, NULL, NULL); 
 }
 
+#include <commdlg.h>
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch(msg)
     {
@@ -67,6 +73,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 Settings.isRunning = !Settings.isRunning;
                 toggleServer();
                 PrintWindow(hwnd, NULL, 0);
+            } else if ((int*)lParam == (int*)hwndChooseFolder) {
+                OPENFILENAMEA ofn;
+                char fileName[300] = "";
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = NULL;
+                ofn.lpstrFile = fileName;
+                ofn.lpstrFile[0] = '\0';
+                ofn.nMaxFile = sizeof(Settings.directory);
+                ofn.nFilterIndex = 1;
+                ofn.lpstrFileTitle = NULL;
+                ofn.nMaxFileTitle = 0;
+                ofn.lpstrInitialDir = NULL;
+                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+                ofn.lpstrFilter = "All Files (*.*)\0*.*\0";
+                ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+                ofn.lpstrDefExt = "";
+                if (GetOpenFileName(&ofn)) {
+                    printf("%s", fileName);
+                    PrintWindow(hwnd, NULL, 0);
+                }
             } else if ((int*)lParam == (int*)portInput) {
                 if (wParam == 50331648) {
                     int len = GetWindowTextLength(portInput) + 1;
