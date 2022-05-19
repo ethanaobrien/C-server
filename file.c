@@ -143,8 +143,8 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         struct dirent *entry;
         while((entry = readdir(folder))) {
             if (Settings.index && toLowerStartsWith(entry->d_name, "index.html")) {
-                char indexPath[MAX_PATH_LEN] = "";
-                combineStrings(indexPath, Settings.directory);
+                char indexPath[MAX_PATH_LEN];
+                memset(indexPath, '\0', sizeof(indexPath));
                 combineStrings(indexPath, path);
                 combineStrings(indexPath, entry->d_name);
                 file = fopen(indexPath, "rb");
