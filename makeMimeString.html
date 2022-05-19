@@ -1,4 +1,13 @@
+<input type="file" onchange="process(event)">
 <script>
+function process(e) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var data = e.target.result;
+        console.log(data.replaceAll('\\', '\\\\').replaceAll('\r', '\\r').replaceAll('\n', '\\n').replaceAll('"', '\\"'));
+    }
+    reader.readAsText(e.target.files[0]);
+}
 var MIMETYPES = {
     "123": "application/vnd.lotus-1-2-3", 
     "3dml": "text/vnd.in3d.3dml", 

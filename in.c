@@ -9,6 +9,8 @@
 #include <stdbool.h>
 #define MAX_PATH_LEN 2048
 
+#include "directory-listing-template.c"
+
 struct set {
     boolean directoryListing;
     boolean index;
@@ -16,7 +18,6 @@ struct set {
     boolean logRequests;
     boolean error;
     char directory[MAX_PATH_LEN];
-    char directoryListingTemplate[20000];
     unsigned long directoryListingTemplateSize;
     int port;
     boolean isRunning;
@@ -46,18 +47,7 @@ int main(int argc, char *argv[]) {
     Settings.error = FALSE;
     Settings.isRunning = TRUE;
     loadSettings();
-    
-    FILE *template;
-    template = fopen("./directory-listing-template.html", "rb");
-    if (template == NULL) {
-        printf("Failed to read directory listing template");
-        exit(1);
-    }
-    
-    memset(Settings.directoryListingTemplate, '\0', sizeof(Settings.directoryListingTemplate));
-    fread(Settings.directoryListingTemplate, 20000, 1, template);
-    fclose(template);
-    Settings.directoryListingTemplateSize = strlen(Settings.directoryListingTemplate);
+    Settings.directoryListingTemplateSize = strlen(directoryListingTemplate);
     main_server = makeServer();
     makeWindow();
 }

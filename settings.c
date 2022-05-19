@@ -27,22 +27,22 @@ void loadSettings() {
         int i=0;
         while(q != NULL) {
             int j=0;
+            char a[sizeof(q)+2];
+            memset(a, '\0', sizeof(a));
+            strcpy(a, q);
+            while (a[j]) {
+                a[j] = a[j+1];
+                j++;
+            }
             if (i == 0) {
                 memset(Settings.directory, '\0', sizeof(Settings.directory));
-                strcpy(Settings.directory, q);
-                while (Settings.directory[j]) {
-                    Settings.directory[j] = Settings.directory[j+1];
-                    j++;
-                }
+                strcpy(Settings.directory, a);
             } else if (i == 1) {
-                char a[sizeof(q)+2];
-                memset(a, '\0', sizeof(a));
-                strcpy(a, q);
-                while (a[j]) {
-                    a[j] = a[j+1];
-                    j++;
-                }
                 Settings.port = atoi(a);
+            } else if (i == 2) {
+                Settings.cors = (a[0]=='1');
+            } else if (i == 3) {
+                Settings.index = (a[0]=='1');
             }
             i++;
             q = strtok(NULL, "\r\n");
@@ -51,8 +51,8 @@ void loadSettings() {
 }
 
 void saveSettings() {
-    char data[4+strlen(Settings.directory)+getIntTextLen(Settings.port)];
-    sprintf(data, "1%s\r\n1%i\r\n", Settings.directory, Settings.port);
+    char data[14+strlen(Settings.directory)+getIntTextLen(Settings.port)];
+    sprintf(data, "1%s\r\n1%i\r\n1%i\r\n1%i\r\n", Settings.directory, Settings.port, Settings.cors, Settings.index);
     char path[strlen(getenv("APPDATA"))+26];
     memset(path, '\0', sizeof(path));
     strcat(path, getenv("APPDATA"));

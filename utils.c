@@ -93,6 +93,15 @@ boolean startsWith(const char *pre, const char *str)
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
+boolean toLowerStartsWith(char a[], char toTest[]) {
+    char b[strlen(a)];
+    strcpy(b, a);
+    for (int i=0; i<strlen(b); i++) {
+        b[i] = tolower(b[i]);
+    }
+    return startsWith(b, toTest);
+}
+
 void urldecode(char *dst, const char *src)
 {
     char a, b;

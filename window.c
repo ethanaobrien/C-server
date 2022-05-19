@@ -8,12 +8,19 @@ const char g_szClassName[] = "myWindowClass";
 
 void toggleServer() {
     if (Settings.isRunning) {
-        main_server = makeServer(Settings.port, Settings);
+        main_server = makeServer();
     } else {
         pthread_cancel(main_server);
         closesocket(sock);
     }
 }
+
+HWND hwndButton,
+     portInput,
+     hwndChooseFolder,
+     corsSetting,
+     indexSetting,
+     openButton;
 
 void paintWindow(HWND hwnd) {
     PAINTSTRUCT ps;
@@ -24,13 +31,14 @@ void paintWindow(HWND hwnd) {
         sprintf(msg, "Error");
         char portMsg[41+getIntTextLen(Settings.port)];
         sprintf(portMsg, "There was an error listening on the port %i", Settings.port);
-        TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
+        SetWindowText(openButton, TEXT(portMsg));
     } else if (Settings.isRunning) {
         char portMsg[38+getIntTextLen(Settings.port)];
         sprintf(portMsg, "Open http://127.0.0.1:%i in your browser", Settings.port);
-        TextOut(hdc, 20, 100, TEXT(portMsg), strlen(portMsg));
+        SetWindowText(openButton, TEXT(portMsg));
         sprintf(msg, "Running");
     } else {
+        SetWindowText(openButton, TEXT("Not Running"));
         sprintf(msg, "Not Running");
     }
     if (strlen(Settings.directory) > 0) {
@@ -47,8 +55,6 @@ void paintWindow(HWND hwnd) {
     ReleaseDC(hwnd, hdc);
 }
 
-HWND hwndButton, portInput, hwndChooseFolder;
-
 boolean onlyInts(char text[]) {
     int i=0;
     while (text[i]) {
@@ -60,28 +66,37 @@ boolean onlyInts(char text[]) {
     return TRUE;
 }
 
-void createButton(HWND hwnd) {
+void createButtons(HWND hwnd) {
     hwndButton = CreateWindow("BUTTON", "Toggle",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 45, 100, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     hwndChooseFolder = CreateWindow("BUTTON", "Choose Directory",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 170, 125, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    corsSetting = CreateWindow("BUTTON", (Settings.cors?"Disable CORS Headers":"Enable CORS Headers"),
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        20, 255, 175, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    indexSetting = CreateWindow("BUTTON", (Settings.index?"Do Not Auto Render index.html":"Auto Render index.html"),
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        20, 300, 225, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    openButton = CreateWindow("BUTTON", "",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        20, 95, 300, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     char a[getIntTextLen(Settings.port)];
     memset(a, '\0', sizeof(a));
     sprintf(a, "%i", Settings.port);
-    portInput = CreateWindow(TEXT("Edit"), TEXT(a), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 130, 140, 20, hwnd, NULL, NULL, NULL); 
+    portInput = CreateWindow(TEXT("Edit"), TEXT(a), WS_CHILD | WS_VISIBLE | WS_BORDER, 60, 135, 140, 20, hwnd, NULL, NULL, NULL);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch(msg)
     {
         case WM_COMMAND: {
-            if ((int*)lParam == (int*)hwndButton) {
+            if ((int*)lParam == (int*)hwndButton) { //toggle running button pressed
                 Settings.isRunning = !Settings.isRunning;
                 toggleServer();
                 PrintWindow(hwnd, NULL, 0);
-            } else if ((int*)lParam == (int*)hwndChooseFolder) {
+            } else if ((int*)lParam == (int*)hwndChooseFolder) { //choose folder button pressed
                 char fileName[sizeof(Settings.directory)];
                 memset(fileName, '\0', sizeof(fileName));
                 BROWSEINFO bInfo;
@@ -103,7 +118,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     saveSettings();
                 }
             } else if ((int*)lParam == (int*)portInput) {
-                if (wParam == 50331648) {
+                if (wParam == 50331648) { //port input field changed
                     int len = GetWindowTextLength(portInput) + 1;
                     char text[len];
                     memset(text, '\0', sizeof(text));
@@ -118,6 +133,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     Settings.port = a;
                     saveSettings();
                 }
+            } else if ((int*)lParam == (int*)corsSetting) { //toggle CORS button pressed
+                Settings.cors = !Settings.cors;
+                if (Settings.cors) {
+                    char text[] = "Disable CORS Headers";
+                    SetWindowText(corsSetting, TEXT(text));
+                } else {
+                    char text[] = "Enable CORS Headers";
+                    SetWindowText(corsSetting, TEXT(text));
+                }
+                saveSettings();
+            } else if ((int*)lParam == (int*)indexSetting) { //toggle auto render index button pressed
+                Settings.index = !Settings.index;
+                if (Settings.index) {
+                    char text[] = "Do Not Auto Render index.html";
+                    SetWindowText(indexSetting, TEXT(text));
+                } else {
+                    char text[] = "Auto Render index.html";
+                    SetWindowText(indexSetting, TEXT(text));
+                }
+                saveSettings();
+            } else if ((int*)lParam == (int*)openButton) { //open button
+                if (Settings.error || !Settings.isRunning) return 0;
+                char cmd[27+getIntTextLen(Settings.port)];
+                sprintf(cmd, "start http://127.0.0.1:%i/", Settings.port);
+                system(cmd);
             }
         }
         break;
@@ -176,7 +216,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
-    createButton(hwnd);
+    createButtons(hwnd);
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);

@@ -109,25 +109,8 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     FILE *file;
     DIR *folder;
     boolean isDirectory = TRUE;
-    boolean isIndex = FALSE;
     file = fopen(path, "rb");
     if (file == NULL) {
-        if (Settings.index) {
-            char indexPath[MAX_PATH_LEN] = "";
-            combineStrings(indexPath, Settings.directory);
-            combineStrings(indexPath, requestPath);
-            combineStrings(indexPath, "index.html");
-            file = fopen(indexPath, "rb");
-            if (! endsWith(path, '/')) {
-                char header[strlen(requestPath)+13];
-                sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
-                return writeHeaders(msg_sock, 301, "Moved Permanently", "", "", 0, header) ? 1 : 0;
-            }
-            if (file != NULL) {
-                isIndex = TRUE;
-                isDirectory = FALSE;
-            }
-        }
         if (isDirectory != FALSE && Settings.directoryListing) {
             folder = opendir(path);
             if (folder != NULL) {
@@ -135,7 +118,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             } else {
                 return render404(msg_sock, method);
             }
-        } else if (isDirectory != FALSE && isIndex != TRUE) {
+        } else if (isDirectory != FALSE) {
             return render404(msg_sock, method);
         }
     } else {
@@ -148,6 +131,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             return writeHeaders(msg_sock, 301, "Moved Permanently", "", "", 0, header) ? 1 : 0;
         }
         //render directory
+        boolean isIndex = FALSE;
         unsigned long len = Settings.directoryListingTemplateSize;
         
         if (! compareStrings(requestPath, "/")) {
@@ -156,39 +140,52 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         len+=52;
         struct dirent *entry;
         while((entry = readdir(folder))) {
+            if (Settings.index && toLowerStartsWith(entry->d_name, "index.html")) {
+                char indexPath[MAX_PATH_LEN] = "";
+                combineStrings(indexPath, Settings.directory);
+                combineStrings(indexPath, requestPath);
+                combineStrings(indexPath, entry->d_name);
+                file = fopen(indexPath, "rb");
+                if (file != NULL) {
+                    isIndex = TRUE;
+                    break;
+                }
+            }
             len+=strlen(entry->d_name);
             len+=strlen(entry->d_name);
             len+=39;
         }
-        unsigned char res[len];
-        memset(res, '\0', sizeof(res));
-        combineStrings2(res, Settings.directoryListingTemplate, Settings.directoryListingTemplateSize-2);
-        combineStrings(res, "\n<script>");
-        combineStrings(res, "\nstart(window.location.pathname);");
-        if (! compareStrings(requestPath, "/")) {
-            combineStrings(res, "\nonHasParentDirectory();");
-        }
-        rewinddir(folder);
-        while((entry = readdir(folder))) {
-            char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
-            char isDir[6] = "";
-            if (isItDirectory(entry->d_name, requestPath)) {
-                strcpy(isDir, "true ");
-            } else {
-                strcpy(isDir, "false");
+        if (!isIndex) {
+            unsigned char res[len];
+            memset(res, '\0', sizeof(res));
+            combineStrings2(res, directoryListingTemplate, Settings.directoryListingTemplateSize-2);
+            combineStrings(res, "\n<script>");
+            combineStrings(res, "\nstart(window.location.pathname);");
+            if (! compareStrings(requestPath, "/")) {
+                combineStrings(res, "\nonHasParentDirectory();");
             }
-            sprintf(addStr, "%s%s%s%s%s%s%s", "\naddRow(\"", entry->d_name, "\", \"", entry->d_name, "\", ", isDir, ", '', '', '', '');");
-            combineStrings(res, addStr);
+            rewinddir(folder);
+            while((entry = readdir(folder))) {
+                char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
+                char isDir[6] = "";
+                if (isItDirectory(entry->d_name, requestPath)) {
+                    strcpy(isDir, "true ");
+                } else {
+                    strcpy(isDir, "false");
+                }
+                sprintf(addStr, "%s%s%s%s%s%s%s", "\naddRow(\"", entry->d_name, "\", \"", entry->d_name, "\", ", isDir, ", '', '', '', '');");
+                combineStrings(res, addStr);
+            }
+            combineStrings(res, "\n</script>");
+            closedir(folder);
+            if (!writeHeaders(msg_sock, 200, "OK", "", "Content-type: text/html; charset=utf-8\r\n", len-1, "")) {
+                return 0;
+            }
+            if (startsWith(method, "HEAD")) {
+                return 1;
+            }
+            return send(msg_sock, res, sizeof(res)-1, 0);
         }
-        combineStrings(res, "\n</script>");
-        closedir(folder);
-        if (!writeHeaders(msg_sock, 200, "OK", "", "Content-type: text/html; charset=utf-8\r\n", len-1, "")) {
-            return 0;
-        }
-        if (startsWith(method, "HEAD")) {
-            return 1;
-        }
-        return send(msg_sock, res, sizeof(res)-1, 0);
     }
     
     //render file
