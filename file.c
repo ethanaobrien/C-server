@@ -94,15 +94,17 @@ int noDirectoryChosen(SOCKET msg_sock) {
 }
 
 int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeHeader[], char method[]) {
-    char path[MAX_PATH_LEN] = "";
-    char decodedPath[MAX_PATH_LEN] = "";
+    char path[MAX_PATH_LEN];
+    char decodedPath[MAX_PATH_LEN];
+    memset(path, '\0', sizeof(path));
+    memset(decodedPath, '\0', sizeof(decodedPath));
     int i=0, j=0;
     int length = 0;
     combineStrings(path, Settings.directory);
     urldecode(decodedPath, requestPath);
     combineStrings(path, decodedPath);
     if (Settings.logRequests) {
-        printf("%s%s\n", method, path);
+        printf("%s: %s\n", method, path);
     }
     
     //first, get the length of the file
@@ -126,7 +128,7 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
     }
     if (isDirectory) {
         if (! endsWith(path, '/')) {
-            char header[strlen(requestPath)+89];
+            char header[strlen(path)+89];
             sprintf(header, "%s%s%s", "Location: ", requestPath, "/\r\n");
             return writeHeaders(msg_sock, 301, "Moved Permanently", "", "", 0, header) ? 1 : 0;
         }
@@ -134,16 +136,16 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
         boolean isIndex = FALSE;
         unsigned long len = Settings.directoryListingTemplateSize;
         
-        if (! compareStrings(requestPath, "/")) {
+        if (! compareStrings(path, "/")) {
             len+=24;
         }
-        len+=52;
+        len+=63;
         struct dirent *entry;
         while((entry = readdir(folder))) {
             if (Settings.index && toLowerStartsWith(entry->d_name, "index.html")) {
                 char indexPath[MAX_PATH_LEN] = "";
                 combineStrings(indexPath, Settings.directory);
-                combineStrings(indexPath, requestPath);
+                combineStrings(indexPath, path);
                 combineStrings(indexPath, entry->d_name);
                 file = fopen(indexPath, "rb");
                 if (file != NULL) {
@@ -160,15 +162,15 @@ int writeData(char requestPath[], SOCKET msg_sock, boolean hasRange, char rangeH
             memset(res, '\0', sizeof(res));
             combineStrings2(res, directoryListingTemplate, Settings.directoryListingTemplateSize-2);
             combineStrings(res, "\n<script>");
-            combineStrings(res, "\nstart(window.location.pathname);");
-            if (! compareStrings(requestPath, "/")) {
+            combineStrings(res, "\nstart(decodeURI(window.location.pathname));");
+            if (! compareStrings(path, "/")) {
                 combineStrings(res, "\nonHasParentDirectory();");
             }
             rewinddir(folder);
             while((entry = readdir(folder))) {
                 char addStr[40+strlen(entry->d_name)+strlen(entry->d_name)];
                 char isDir[6] = "";
-                if (isItDirectory(entry->d_name, requestPath)) {
+                if (isItDirectory(entry->d_name, path)) {
                     strcpy(isDir, "true ");
                 } else {
                     strcpy(isDir, "false");

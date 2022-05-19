@@ -75,10 +75,9 @@ boolean writeToSocket(SOCKET msg_sock, char res[], FILE *file) {
 
 boolean isItDirectory(char entryName[], char requestPath[]) {
     struct _stat filestat;
-    char path[MAX_PATH_LEN] = "";
-    combineStrings(path, Settings.directory);
+    char path[MAX_PATH_LEN];
+    memset(path, '\0', sizeof(path));
     combineStrings(path, requestPath);
-    combineStrings(path, "/");
     combineStrings(path, entryName);
     _stat(path, &filestat);
     return S_ISDIR(filestat.st_mode);

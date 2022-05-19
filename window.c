@@ -114,6 +114,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     if (strlen(fileName) == 0) return 0;
                     memset(Settings.directory, '\0', sizeof(Settings.directory));
                     strcpy(Settings.directory, fileName);
+                    int i=0;
+                    while (Settings.directory[i] != '\0') {
+                        if (Settings.directory[i] == '\\') {
+                            Settings.directory[i] = '/';
+                        }
+                        i++;
+                    }
                     PrintWindow(hwnd, NULL, 0);
                     saveSettings();
                 }
