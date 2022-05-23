@@ -73,11 +73,11 @@ void createButtons(HWND hwnd) {
     hwndChooseFolder = CreateWindow("BUTTON", "Choose Directory",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 170, 125, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-    corsSetting = CreateWindow("BUTTON", (Settings.cors?"Disable CORS Headers":"Enable CORS Headers"),
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    corsSetting = CreateWindow("BUTTON", "Send CORS Headers",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
         20, 255, 175, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-    indexSetting = CreateWindow("BUTTON", (Settings.index?"Do Not Auto Render index.html":"Auto Render index.html"),
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    indexSetting = CreateWindow("BUTTON", "Auto Render index.html",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
         20, 300, 225, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     openButton = CreateWindow("BUTTON", "",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
@@ -141,24 +141,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     saveSettings();
                 }
             } else if ((int*)lParam == (int*)corsSetting) { //toggle CORS button pressed
-                Settings.cors = !Settings.cors;
-                if (Settings.cors) {
-                    char text[] = "Disable CORS Headers";
-                    SetWindowText(corsSetting, TEXT(text));
-                } else {
-                    char text[] = "Enable CORS Headers";
-                    SetWindowText(corsSetting, TEXT(text));
-                }
+                Settings.cors = (SendMessage(corsSetting, BM_GETCHECK, 0, 0) == BST_CHECKED);
                 saveSettings();
             } else if ((int*)lParam == (int*)indexSetting) { //toggle auto render index button pressed
-                Settings.index = !Settings.index;
-                if (Settings.index) {
-                    char text[] = "Do Not Auto Render index.html";
-                    SetWindowText(indexSetting, TEXT(text));
-                } else {
-                    char text[] = "Auto Render index.html";
-                    SetWindowText(indexSetting, TEXT(text));
-                }
+                Settings.index = (SendMessage(indexSetting, BM_GETCHECK, 0, 0) == BST_CHECKED);
                 saveSettings();
             } else if ((int*)lParam == (int*)openButton) { //open button
                 if (Settings.error || !Settings.isRunning) return 0;
