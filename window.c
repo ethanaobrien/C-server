@@ -15,12 +15,15 @@ void toggleServer() {
     }
 }
 
+int width = 410, height = 700;
+
 HWND hwndButton,
      portInput,
      hwndChooseFolder,
      corsSetting,
      indexSetting,
-     openButton;
+     openButton,
+     openGithub;
 
 void paintWindow(HWND hwnd) {
     PAINTSTRUCT ps;
@@ -51,6 +54,7 @@ void paintWindow(HWND hwnd) {
     }
     TextOut(hdc, 20, 20, TEXT(msg), strlen(msg));
     TextOut(hdc, 20, 135, TEXT("Port: "), strlen("Port: "));
+    TextOut(hdc, 20, height-90, TEXT("C-server 1.0"), strlen("C-server 1.0"));
     EndPaint(hwnd, &ps);
     ReleaseDC(hwnd, hdc);
 }
@@ -71,7 +75,7 @@ void createButtons(HWND hwnd) {
         WS_TABSTOP | WS_VISIBLE | WS_CHILD,
         20, 45, 100, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     hwndChooseFolder = CreateWindow("BUTTON", "Choose Directory",
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
         20, 170, 125, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     corsSetting = CreateWindow("BUTTON", "Send CORS Headers",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
@@ -79,9 +83,18 @@ void createButtons(HWND hwnd) {
     indexSetting = CreateWindow("BUTTON", "Auto Render index.html",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
         20, 300, 225, 40, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    if (Settings.index) {
+        SendMessage(indexSetting, BM_SETCHECK, BST_CHECKED, 0);
+    }
+    if (Settings.cors) {
+        SendMessage(corsSetting, BM_SETCHECK, BST_CHECKED, 0);
+    }
     openButton = CreateWindow("BUTTON", "",
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
         20, 95, 300, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+    openGithub = CreateWindow("BUTTON", "View on github",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_FLAT,
+        width-175, height-100, 125, 30, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
     char a[getIntTextLen(Settings.port)];
     memset(a, '\0', sizeof(a));
     sprintf(a, "%i", Settings.port);
@@ -146,11 +159,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             } else if ((int*)lParam == (int*)indexSetting) { //toggle auto render index button pressed
                 Settings.index = (SendMessage(indexSetting, BM_GETCHECK, 0, 0) == BST_CHECKED);
                 saveSettings();
-            } else if ((int*)lParam == (int*)openButton) { //open button
+            } else if ((int*)lParam == (int*)openButton) { //open button pressed
                 if (Settings.error || !Settings.isRunning) return 0;
                 char cmd[27+getIntTextLen(Settings.port)];
                 sprintf(cmd, "start http://127.0.0.1:%i/", Settings.port);
                 system(cmd);
+            } else if ((int*)lParam == (int*)openGithub) { //open github button pressed
+                system("start https://github.com/ethanaobrien/C-server");
             }
         }
         break;
@@ -193,7 +208,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
-    int width = 410, height = 700;
     
     hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
