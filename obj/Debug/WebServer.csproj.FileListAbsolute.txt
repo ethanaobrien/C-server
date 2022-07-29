@@ -1,0 +1,11 @@
+C:\Users\ethan\source\repos\WebServer\bin\Debug\WebServer.exe.config
+C:\Users\ethan\source\repos\WebServer\bin\Debug\WebServer.exe
+C:\Users\ethan\source\repos\WebServer\bin\Debug\WebServer.pdb
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.csproj.AssemblyReference.cache
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.csproj.SuggestedBindingRedirects.cache
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.WebServer.resources
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.Properties.Resources.resources
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.csproj.GenerateResource.cache
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.csproj.CoreCompileInputs.cache
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.exe
+C:\Users\ethan\source\repos\WebServer\obj\Debug\WebServer.pdb

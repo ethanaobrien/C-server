@@ -1,24 +1,44 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
-using System.Drawing;
-using System.Windows.Forms;
 using System.Text;
 using System.Threading;
-using System.Web.UI;
+using System.Collections;
 
-public class Server {
-    private int readChunkSize = 1024*1024*8;
+namespace WebServer {
+    internal static class Program {
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new WebServer());
+        }
+    }
+}
+
+public class Server
+{
+    private int readChunkSize = 1024 * 1024 * 8;
     private int writeChunkSize = 1024;
     private Socket listener;
     private Thread mainThread;
-    private struct SET {
+    private struct SET
+    {
         public int port;
         public string mainPath;
         public bool allowDelete;
         public bool allowPut;
-        public SET(int port, string mainPath, bool allowPut, bool allowDelete) {
+        public SET(int port, string mainPath, bool allowPut, bool allowDelete)
+        {
             this.port = port;
             this.mainPath = mainPath;
             this.allowPut = allowPut;
@@ -26,33 +46,69 @@ public class Server {
         }
     }
     private SET Settings;
-    public Server() {
+    public Server()
+    {
         this.Settings = new SET(8080, "C:", false, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    
-    
-    public Server(string path, int port) {
+
+
+    public Server(string path, int port)
+    {
         this.Settings = new SET(port, path, false, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    public Server(string path, int port, bool allowPut, bool allowDelete) {
+    public Server(string path, int port, bool allowPut, bool allowDelete)
+    {
         this.Settings = new SET(port, path, allowPut, allowDelete);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    private void ServerMain() {
-        IPHostEntry host = Dns.GetHostEntry("localhost");
-        IPAddress ipAddress = host.AddressList[0];
-        IPEndPoint localEndPoint = new IPEndPoint(ipAddress, this.Settings.port);
-        try {
+    bool running = true;
+    public void Terminate()
+    {
+        try
+        {
+            running = false;
+            this.listener.Shutdown(SocketShutdown.Both);
+        }
+        catch (Exception e) { }
+        try
+        {
+            this.listener.Close();
+        }
+        catch (Exception e) { }
+        try
+        {
+            this.listener.Dispose();
+        }
+        catch (Exception e) { }
+        try
+        {
+            this.listener = null;
+        }
+        catch (Exception e) { }
+        try
+        {
+            this.mainThread.Abort();
+        }
+            catch (Exception e) { }
+    }
+        private void ServerMain()
+    {
+        try
+        {
+            IPHostEntry host = Dns.GetHostEntry("localhost");
+            IPAddress ipAddress = host.AddressList[0];
+            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, this.Settings.port);
             this.listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.listener.Bind(localEndPoint);
             this.listener.Listen(100); //connection limit
             Console.WriteLine("Listening on http://localhost:{0}", this.Settings.port);
-            while (true) {
+            while (running)
+            {
                 Socket handler = this.listener.Accept();
                 Thread t = new Thread(onRequest);
                 t.Start(handler);
@@ -60,20 +116,23 @@ public class Server {
             }
             //handler.Shutdown(SocketShutdown.Both);
             //handler.Close();
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Console.WriteLine(e.ToString());
         }
-
-        Console.WriteLine("\n Press any key to continue...");
-        Console.ReadKey();
     }
-    private void onRequest(Object obj) {
-        Socket handler = (Socket) obj;
-        try {
-            while (true) {
+    private void onRequest(Object obj)
+    {
+        Socket handler = (Socket)obj;
+        try
+        {
+            while (running)
+            {
                 bool consumed = false;
                 string data = "";
-                while (!consumed) {
+                while (!consumed)
+                {
                     byte[] bytes = new byte[1];
                     int bytesRec = handler.Receive(bytes);
                     data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
@@ -82,131 +141,167 @@ public class Server {
                 //Console.WriteLine("Text received : {0}", data);
                 string url = Uri.UnescapeDataString(data.Split(' ')[1].Split('?')[0]);
                 string method = data.Split(' ')[0];
-                string path = this.Settings.mainPath+url;
+                string path = this.Settings.mainPath + url;
                 Console.WriteLine("Request {0} {1}", method, url);
-                if (method.Equals("HEAD")||method.Equals("GET")) {
+                if (method.Equals("HEAD") || method.Equals("GET"))
+                {
                     GetHead(handler, method, url, path, data);
-                } else if (method.Equals("PUT") && this.Settings.allowPut) {
+                }
+                else if (method.Equals("PUT") && this.Settings.allowPut)
+                {
                     put(handler, path, data);
-                } else if (method.Equals("DELETE") && this.Settings.allowDelete) {
+                }
+                else if (method.Equals("DELETE") && this.Settings.allowDelete)
+                {
                     del(handler, path);
-                } else {
+                }
+                else
+                {
                     byte[] msg = Encoding.UTF8.GetBytes("405 - Method not allowed");
                     string extraHeader = "Allow: GET, HEAD";
-                    if (this.Settings.allowPut) extraHeader+=", PUT";
-                    if (this.Settings.allowDelete) extraHeader+=", DELETE";
-                    writeHeader(handler, 405, "Method Not Allowed", (long)msg.Length, "", extraHeader+"\r\n");
+                    if (this.Settings.allowPut) extraHeader += ", PUT";
+                    if (this.Settings.allowDelete) extraHeader += ", DELETE";
+                    writeHeader(handler, 405, "Method Not Allowed", (long)msg.Length, "", extraHeader + "\r\n");
                     handler.Send(msg);
                 }
                 //System.Windows.Forms.MessageBox.Show(url);
             }
-        } catch (Exception e) {
-            error(handler);
+        }
+        catch (Exception e)
+        {
+            handler.Shutdown(SocketShutdown.Both);
+            handler.Close();
             Console.WriteLine("Error: {0}", e.ToString());
         }
-        handler.Shutdown(SocketShutdown.Both);
-        handler.Close();
     }
-    private void writeHeader(Socket handler, int httpCode, string code, long cl, string ct, string extra) {
-        string header = "HTTP/1.1 "+httpCode+" "+code+"\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\n";
-        if (ct.Length > 0) {
-            header += "Content-type: "+ct+"\r\n";
+    private void writeHeader(Socket handler, int httpCode, string code, long cl, string ct, string extra)
+    {
+        string header = "HTTP/1.1 " + httpCode + " " + code + "\r\nAccept-Ranges: bytes\r\nConnection: keep-alive\r\n";
+        if (ct.Length > 0)
+        {
+            header += "Content-type: " + ct + "\r\n";
         }
-        if (extra.Length > 0) {
+        if (extra.Length > 0)
+        {
             header += extra;
         }
-        header += "Content-Length: "+cl+"\r\n\r\n";
+        header += "Content-Length: " + cl + "\r\n\r\n";
         byte[] msg = Encoding.UTF8.GetBytes(header);
         handler.Send(msg);
     }
-    private string getMime(string fileName) {
+    private string getMime(string fileName)
+    {
         string[] w = fileName.Split('.');
-        string ext = w[w.Length-1];
-        string delim = ","+ext+":";
+        string ext = w[w.Length - 1];
+        string delim = "," + ext + ":";
         int i = mimetypes.IndexOf(delim);
-        if (i != -1) {
-            return mimetypes.Substring(i+delim.Length).Split(',')[0];
+        if (i != -1)
+        {
+            return mimetypes.Substring(i + delim.Length).Split(',')[0];
         }
         return "";
     }
-    private void error(Socket handler) {
-        try {
+    private void error(Socket handler)
+    {
+        try
+        {
             byte[] msg = Encoding.UTF8.GetBytes("500 - Internal Server Error");
             writeHeader(handler, 500, "INTERNAL SERVER ERROR", (long)msg.Length, "", "");
             handler.Send(msg);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             Console.WriteLine("Error2: {0}", e.ToString());
         }
     }
-    private void GetHead(Socket handler, string method, string url, string path, string data) {
-        try {
-            if (Directory.Exists(path)) {
+    private void GetHead(Socket handler, string method, string url, string path, string data)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
                 string[] Files = System.IO.Directory.GetFileSystemEntries(path);
-                string resp =  directoryListingTemplate+"<script>start(decodeURI(window.location.pathname));</script>";
-                if (!url.Equals("/")) {
+                string resp = directoryListingTemplate + "<script>start(decodeURI(window.location.pathname));</script>";
+                if (!url.Equals("/"))
+                {
                     resp += "<script>onHasParentDirectory();</script>";
                 }
-                foreach (string sFile in Files) {
+                foreach (string sFile in Files)
+                {
                     string[] s = sFile.Split('/', '\\');
-                    string fileName = s[s.Length-1];
-                    resp += "\n<script>addRow(\""+fileName+"\", \""+fileName+"\", "+(Directory.Exists(sFile)?1:0)+", '', '', '', '');</script>";
+                    string fileName = s[s.Length - 1];
+                    resp += "\n<script>addRow(\"" + fileName + "\", \"" + fileName + "\", " + (Directory.Exists(sFile) ? 1 : 0) + ", '', '', '', '');</script>";
                 }
                 byte[] msg = Encoding.UTF8.GetBytes(resp);
                 writeHeader(handler, 200, "OK", (long)msg.Length, "text/html; charset=utf-8", "");
-                if (method.Equals("HEAD")) {
+                if (method.Equals("HEAD"))
+                {
                     return;
                 }
                 handler.Send(msg);
-            } else if (File.Exists(path)) {
+            }
+            else if (File.Exists(path))
+            {
                 string range = "";
                 string d = data.ToLower();
                 string delim = "\r\nrange: ";
                 int i = d.IndexOf(delim);
-                if (i != -1) {
-                    range = data.Substring(i+delim.Length).Split('\r')[0];
+                if (i != -1)
+                {
+                    range = data.Substring(i + delim.Length).Split('\r')[0];
                 }
                 var file = new FileInfo(path);
-                
+
                 string rheader = "";
-                long fileOffset=0, fileEndOffset=file.Length, len=file.Length+1;
+                long fileOffset = 0, fileEndOffset = file.Length, len = file.Length + 1;
                 long cl = file.Length;
                 int code = 200;
-                if (range.Length > 0) {
+                if (range.Length > 0)
+                {
                     string ran = range.Split('=')[1];
                     string[] rparts = ran.Split('-');
-                    if (rparts[1].Length == 0) {
+                    if (rparts[1].Length == 0)
+                    {
                         fileOffset = Int32.Parse(rparts[0]);
                         fileEndOffset = file.Length;
-                        cl = len-fileOffset-1;
-                        rheader = "Content-Range: bytes "+fileOffset+"-"+(len-2)+"/"+(len-1)+"\r\n";
+                        cl = len - fileOffset - 1;
+                        rheader = "Content-Range: bytes " + fileOffset + "-" + (len - 2) + "/" + (len - 1) + "\r\n";
                         code = (fileOffset == 0) ? 200 : 206;
-                    } else {
+                    }
+                    else
+                    {
                         fileOffset = Int32.Parse(rparts[0]);
                         fileEndOffset = Int32.Parse(rparts[1]);
-                        cl = fileEndOffset-fileOffset+1;
-                        rheader = "Content-Range: bytes "+fileOffset+"-"+(fileEndOffset)+"/"+(len-1)+"\r\n";
+                        cl = fileEndOffset - fileOffset + 1;
+                        rheader = "Content-Range: bytes " + fileOffset + "-" + (fileEndOffset) + "/" + (len - 1) + "\r\n";
                         code = 206;
                     }
                 }
                 writeHeader(handler, code, "OK", cl, getMime(path), rheader);
-                if (method.Equals("HEAD")) {
+                if (method.Equals("HEAD"))
+                {
                     return;
                 }
                 FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
                 BinaryReader reader = new BinaryReader(stream);
                 reader.BaseStream.Position = fileOffset;
                 long readLen = 0;
-                while (readLen <= cl) {
+                while (readLen <= cl)
+                {
                     int a = this.readChunkSize;
-                    if (cl-readLen < this.readChunkSize) {
-                        a = (int)(cl-readLen);
+                    if (cl - readLen < this.readChunkSize)
+                    {
+                        a = (int)(cl - readLen);
                     }
-                    if (a==0) break;
-                    readLen+=a;
+                    if (a == 0) break;
+                    readLen += a;
                     byte[] res = reader.ReadBytes(a);
-                    try {
+                    try
+                    {
                         handler.Send(res);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         //Console.WriteLine("Errorr: {0}", e.ToString());
                         reader.Close();
                         stream.Close();
@@ -215,30 +310,38 @@ public class Server {
                 }
                 reader.Close();
                 stream.Close();
-            } else {
+            }
+            else
+            {
                 byte[] msg = Encoding.UTF8.GetBytes("404");
                 writeHeader(handler, 404, "NOT FOUND", (long)msg.Length, "", "");
                 handler.Send(msg);
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             error(handler);
             Console.WriteLine("Error: {0}", e.ToString());
         }
     }
-    private void put(Socket handler, string path, string data) {
-        try {
+    private void put(Socket handler, string path, string data)
+    {
+        try
+        {
             long cl = 0;
             string d = data.ToLower();
             string delim = "\r\ncontent-length: ";
             int i = d.IndexOf(delim);
-            if (i == -1) {
+            if (i == -1)
+            {
                 byte[] msg = Encoding.UTF8.GetBytes("400 - Bad Request");
                 writeHeader(handler, 400, "Bad Request", (long)msg.Length, "", "");
                 handler.Send(msg);
                 return;
             }
-            cl = Int64.Parse(data.Substring(i+delim.Length).Split('\r')[0]);
-            if (File.Exists(path) || Directory.Exists(path)) {
+            cl = Int64.Parse(data.Substring(i + delim.Length).Split('\r')[0]);
+            if (File.Exists(path) || Directory.Exists(path))
+            {
                 byte[] msg = Encoding.UTF8.GetBytes("400 - Bad Request");
                 writeHeader(handler, 400, "Bad Request", (long)msg.Length, "", "");
                 handler.Send(msg);
@@ -246,10 +349,12 @@ public class Server {
             }
             FileStream fs = File.Create(path);
             long written = 0;
-            while (written < cl) {
+            while (written < cl)
+            {
                 int a = this.writeChunkSize;
-                if ((int)(cl-written) < this.writeChunkSize) {
-                    a = (int)(cl-written);
+                if ((int)(cl - written) < this.writeChunkSize)
+                {
+                    a = (int)(cl - written);
                 }
                 written += (long)a;
                 byte[] bytes = new byte[a];
@@ -258,16 +363,22 @@ public class Server {
             }
             fs.Close();
             writeHeader(handler, 201, "Created", 0, "", "");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             error(handler);
             Console.WriteLine("Error: {0}", e.ToString());
         }
     }
-    private void del(Socket handler, string path) {
-        try {
+    private void del(Socket handler, string path)
+    {
+        try
+        {
             File.Delete(path);
             writeHeader(handler, 204, "No Content", 0, "", "");
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             error(handler);
             Console.WriteLine("Error: {0}", e.ToString());
         }
