@@ -67,6 +67,18 @@ public class Server
         this.mainThread.Start();
     }
     bool running = true;
+    public void setMainPath(string path)
+    {
+        this.Settings.mainPath = path;
+    }
+    public void setDelete(bool allow)
+    {
+        this.Settings.allowDelete = allow;
+    }
+    public void setPut(bool allow)
+    {
+        this.Settings.allowPut = allow;
+    }
     public void Terminate()
     {
         try
@@ -141,6 +153,13 @@ public class Server
                 //Console.WriteLine("Text received : {0}", data);
                 string url = Uri.UnescapeDataString(data.Split(' ')[1].Split('?')[0]);
                 string method = data.Split(' ')[0];
+                if (this.Settings.mainPath.Length==0)
+                {
+                    byte[] msg = Encoding.UTF8.GetBytes("Path to serve not set!");
+                    writeHeader(handler, 500, "Internal Server Error", (long)msg.Length, "", "");
+                    handler.Send(msg);
+                    continue;
+                }
                 string path = this.Settings.mainPath + url;
                 Console.WriteLine("Request {0} {1}", method, url);
                 if (method.Equals("HEAD") || method.Equals("GET"))
@@ -346,6 +365,11 @@ public class Server
                 writeHeader(handler, 400, "Bad Request", (long)msg.Length, "", "");
                 handler.Send(msg);
                 return;
+            }
+            string folder = Path.GetDirectoryName(path);
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
             }
             FileStream fs = File.Create(path);
             long written = 0;
