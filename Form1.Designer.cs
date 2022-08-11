@@ -212,9 +212,9 @@
             this.URL.ForeColor = System.Drawing.SystemColors.Highlight;
             this.URL.Location = new System.Drawing.Point(86, 227);
             this.URL.Name = "URL";
-            this.URL.Size = new System.Drawing.Size(208, 17);
+            this.URL.Size = new System.Drawing.Size(276, 17);
             this.URL.TabIndex = 14;
-            this.URL.Text = "Open 127.0.0.1 in your browser";
+            this.URL.Text = "Open http://localhost:8080 in your browser";
             this.URL.Visible = false;
             this.URL.Click += new System.EventHandler(this.URL_Click);
             // 

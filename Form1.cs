@@ -11,7 +11,7 @@ namespace WebServer
         private string pathToServe;
         private int port = 8080;
         private bool running = false;
-        private string localHostURL = "http://127.0.0.1/";
+        private string localHostURL = "http://localhost:8080/";
         public WebServer()
         {
             InitializeComponent();
@@ -37,7 +37,7 @@ namespace WebServer
             this.MSG.Visible = false;
             this.URL.Visible = true;
             mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked);
-            this.localHostURL = "http://127.0.0.1:" + port + "/";
+            this.localHostURL = "http://localhost:" + port + "/";
             this.URL.Text = "Open " + this.localHostURL + " in your browser";
         }
         private void saveSettings()
@@ -108,7 +108,7 @@ namespace WebServer
                 }
                 this.ServingPath.Text = "Currently Serving: " + pathToServe;
                 this.Port.Value = new decimal(new int[] { port, 0, 0, 0 });
-                this.localHostURL = "http://127.0.0.1:" + port + "/";
+                this.localHostURL = "http://localhost:" + port + "/";
                 this.URL.Text = "Open " + this.localHostURL + " in your browser";
             }
             catch (Exception e) { }
