@@ -37,18 +37,22 @@ public class Server
         public string mainPath;
         public bool allowDelete;
         public bool allowPut;
-        public SET(int port, string mainPath, bool allowPut, bool allowDelete)
+        public bool cors;
+        public bool index;
+        public SET(int port, string mainPath, bool allowPut, bool allowDelete, bool cors, bool index)
         {
             this.port = port;
             this.mainPath = mainPath;
             this.allowPut = allowPut;
             this.allowDelete = allowDelete;
+            this.cors = cors;
+            this.index = index;
         }
     }
     private SET Settings;
     public Server()
     {
-        this.Settings = new SET(8080, "C:", false, false);
+        this.Settings = new SET(8080, "C:", false, false, false, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -56,13 +60,13 @@ public class Server
 
     public Server(string path, int port)
     {
-        this.Settings = new SET(port, path, false, false);
+        this.Settings = new SET(port, path, false, false, false, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    public Server(string path, int port, bool allowPut, bool allowDelete)
+    public Server(string path, int port, bool allowPut, bool allowDelete, bool cors, bool index)
     {
-        this.Settings = new SET(port, path, allowPut, allowDelete);
+        this.Settings = new SET(port, path, allowPut, allowDelete, cors, index);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -75,9 +79,17 @@ public class Server
     {
         this.Settings.allowDelete = allow;
     }
+    public void setCors(bool set)
+    {
+        this.Settings.cors = set;
+    }
     public void setPut(bool allow)
     {
         this.Settings.allowPut = allow;
+    }
+    public void setIndex(bool allow)
+    {
+        this.Settings.index = allow;
     }
     public void Terminate()
     {
@@ -161,6 +173,16 @@ public class Server
                     continue;
                 }
                 string path = this.Settings.mainPath + url;
+                if (!url.EndsWith("/") && Directory.Exists(path))
+                {
+                    writeHeader(handler, 301, "Moved permanently", 0, "", "Location: " + url + "/\r\n");
+                    continue;
+                }
+                if (url.EndsWith("/") && File.Exists(path.Substring(0, path.Length - 1)))
+                {
+                    writeHeader(handler, 301, "Moved permanently", 0, "", "Location: " + url.Substring(0, url.Length-1) + "\r\n");
+                    continue;
+                }
                 Console.WriteLine("Request {0} {1}", method, url);
                 if (method.Equals("HEAD") || method.Equals("GET"))
                 {
@@ -204,6 +226,10 @@ public class Server
         {
             header += extra;
         }
+        if (this.Settings.cors)
+        {
+            header += "Access-Control-Allow-Origin: *\r\n";
+        }
         header += "Content-Length: " + cl + "\r\n\r\n";
         byte[] msg = Encoding.UTF8.GetBytes(header);
         handler.Send(msg);
@@ -233,33 +259,53 @@ public class Server
             Console.WriteLine("Error2: {0}", e.ToString());
         }
     }
-    private void GetHead(Socket handler, string method, string url, string path, string data)
+    private void GetHead(Socket handler, string method, string url, string inPath, string data)
     {
+        string path = inPath;
         try
         {
             if (Directory.Exists(path))
             {
+                Boolean index = false;
                 string[] Files = System.IO.Directory.GetFileSystemEntries(path);
-                string resp = directoryListingTemplate + "<script>start(decodeURI(window.location.pathname));</script>";
-                if (!url.Equals("/"))
+                if (this.Settings.index)
                 {
-                    resp += "<script>onHasParentDirectory();</script>";
+                    foreach (string sFilez in Files)
+                    {
+                        string fileName = sFilez.Split('/')[sFilez.Split('/').Length - 1];
+                        if ((fileName.ToLower().Equals("index.html") || fileName.ToLower().Equals("index.htm")) && File.Exists(path + fileName))
+                        {
+                            Console.WriteLine(fileName);
+                            index = true;
+                            path += fileName;
+                            break;
+                        }
+                    }
                 }
-                foreach (string sFile in Files)
+                if (!index)
                 {
-                    string[] s = sFile.Split('/', '\\');
-                    string fileName = s[s.Length - 1];
-                    resp += "\n<script>addRow(\"" + fileName + "\", \"" + fileName + "\", " + (Directory.Exists(sFile) ? 1 : 0) + ", '', '', '', '');</script>";
-                }
-                byte[] msg = Encoding.UTF8.GetBytes(resp);
-                writeHeader(handler, 200, "OK", (long)msg.Length, "text/html; charset=utf-8", "");
-                if (method.Equals("HEAD"))
-                {
+                    string resp = directoryListingTemplate + "<script>start(decodeURI(window.location.pathname));</script>";
+                    if (!url.Equals("/"))
+                    {
+                        resp += "<script>onHasParentDirectory();</script>";
+                    }
+                    foreach (string sFile in Files)
+                    {
+                        string[] s = sFile.Split('/', '\\');
+                        string fileName = s[s.Length - 1];
+                        resp += "\n<script>addRow(\"" + fileName + "\", \"" + fileName + "\", " + (Directory.Exists(sFile) ? 1 : 0) + ", '', '', '', '');</script>";
+                    }
+                    byte[] msg2 = Encoding.UTF8.GetBytes(resp);
+                    writeHeader(handler, 200, "OK", (long)msg2.Length, "text/html; charset=utf-8", "");
+                    if (method.Equals("HEAD"))
+                    {
+                        return;
+                    }
+                    handler.Send(msg2);
                     return;
                 }
-                handler.Send(msg);
             }
-            else if (File.Exists(path))
+            if (File.Exists(path))
             {
                 string range = "";
                 string d = data.ToLower();
@@ -329,13 +375,11 @@ public class Server
                 }
                 reader.Close();
                 stream.Close();
+                return;
             }
-            else
-            {
-                byte[] msg = Encoding.UTF8.GetBytes("404");
-                writeHeader(handler, 404, "NOT FOUND", (long)msg.Length, "", "");
-                handler.Send(msg);
-            }
+            byte[] msg = Encoding.UTF8.GetBytes("404");
+            writeHeader(handler, 404, "NOT FOUND", (long)msg.Length, "", "");
+            handler.Send(msg);
         }
         catch (Exception e)
         {

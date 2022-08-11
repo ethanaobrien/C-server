@@ -37,6 +37,12 @@
             this.ServingPath = new System.Windows.Forms.Label();
             this.PUT = new System.Windows.Forms.CheckBox();
             this.DELETE = new System.Windows.Forms.CheckBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.viewOnGithub = new System.Windows.Forms.Label();
+            this.CORS = new System.Windows.Forms.CheckBox();
+            this.AutoIndex = new System.Windows.Forms.CheckBox();
+            this.URL = new System.Windows.Forms.Label();
+            this.MSG = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Port)).BeginInit();
             this.SuspendLayout();
             // 
@@ -44,12 +50,11 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Arial", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(41, 49);
+            this.label1.Location = new System.Drawing.Point(58, 46);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(308, 37);
+            this.label1.Size = new System.Drawing.Size(264, 37);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Simple Web Server";
-            this.label1.Click += new System.EventHandler(this.label1_Click);
+            this.label1.Text = "Simple C Server";
             // 
             // button1
             // 
@@ -76,7 +81,7 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label2.Location = new System.Drawing.Point(86, 199);
+            this.label2.Location = new System.Drawing.Point(86, 181);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(38, 17);
             this.label2.TabIndex = 4;
@@ -86,7 +91,7 @@
             // 
             this.Port.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.Port.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.Port.Location = new System.Drawing.Point(130, 197);
+            this.Port.Location = new System.Drawing.Point(130, 179);
             this.Port.Maximum = new decimal(new int[] {
             100000,
             0,
@@ -110,7 +115,7 @@
             // ChooseDirectory
             // 
             this.ChooseDirectory.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.ChooseDirectory.Location = new System.Drawing.Point(113, 279);
+            this.ChooseDirectory.Location = new System.Drawing.Point(113, 309);
             this.ChooseDirectory.Name = "ChooseDirectory";
             this.ChooseDirectory.Size = new System.Drawing.Size(140, 39);
             this.ChooseDirectory.TabIndex = 6;
@@ -122,7 +127,7 @@
             // 
             this.ServingPath.AutoSize = true;
             this.ServingPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ServingPath.Location = new System.Drawing.Point(62, 243);
+            this.ServingPath.Location = new System.Drawing.Point(45, 266);
             this.ServingPath.Name = "ServingPath";
             this.ServingPath.Size = new System.Drawing.Size(125, 17);
             this.ServingPath.TabIndex = 7;
@@ -132,7 +137,7 @@
             // 
             this.PUT.AutoSize = true;
             this.PUT.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.PUT.Location = new System.Drawing.Point(48, 344);
+            this.PUT.Location = new System.Drawing.Point(48, 368);
             this.PUT.Name = "PUT";
             this.PUT.Size = new System.Drawing.Size(148, 21);
             this.PUT.TabIndex = 8;
@@ -144,7 +149,7 @@
             // 
             this.DELETE.AutoSize = true;
             this.DELETE.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.DELETE.Location = new System.Drawing.Point(48, 372);
+            this.DELETE.Location = new System.Drawing.Point(48, 395);
             this.DELETE.Name = "DELETE";
             this.DELETE.Size = new System.Drawing.Size(168, 21);
             this.DELETE.TabIndex = 9;
@@ -152,11 +157,88 @@
             this.DELETE.UseVisualStyleBackColor = true;
             this.DELETE.CheckStateChanged += new System.EventHandler(this.DELETE_CheckStateChanged);
             // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.label3.Location = new System.Drawing.Point(45, 617);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(139, 17);
+            this.label3.TabIndex = 10;
+            this.label3.Text = "C Server Version 2.3";
+            // 
+            // viewOnGithub
+            // 
+            this.viewOnGithub.AutoSize = true;
+            this.viewOnGithub.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.viewOnGithub.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.viewOnGithub.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.viewOnGithub.Location = new System.Drawing.Point(233, 617);
+            this.viewOnGithub.Name = "viewOnGithub";
+            this.viewOnGithub.Size = new System.Drawing.Size(105, 17);
+            this.viewOnGithub.TabIndex = 11;
+            this.viewOnGithub.Text = "View on GitHub";
+            this.viewOnGithub.Click += new System.EventHandler(this.viewOnGithub_Click);
+            // 
+            // CORS
+            // 
+            this.CORS.AutoSize = true;
+            this.CORS.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.CORS.Location = new System.Drawing.Point(48, 422);
+            this.CORS.Name = "CORS";
+            this.CORS.Size = new System.Drawing.Size(147, 21);
+            this.CORS.TabIndex = 12;
+            this.CORS.Text = "Set CORS headers";
+            this.CORS.UseVisualStyleBackColor = true;
+            this.CORS.CheckStateChanged += new System.EventHandler(this.CORS_CheckStateChanged);
+            // 
+            // AutoIndex
+            // 
+            this.AutoIndex.AutoSize = true;
+            this.AutoIndex.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.AutoIndex.Location = new System.Drawing.Point(48, 449);
+            this.AutoIndex.Name = "AutoIndex";
+            this.AutoIndex.Size = new System.Drawing.Size(174, 21);
+            this.AutoIndex.TabIndex = 13;
+            this.AutoIndex.Text = "Auto Render index.html";
+            this.AutoIndex.UseVisualStyleBackColor = true;
+            this.AutoIndex.CheckStateChanged += new System.EventHandler(this.AutoIndex_CheckStateChanged);
+            // 
+            // URL
+            // 
+            this.URL.AutoSize = true;
+            this.URL.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.URL.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.URL.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.URL.Location = new System.Drawing.Point(86, 227);
+            this.URL.Name = "URL";
+            this.URL.Size = new System.Drawing.Size(208, 17);
+            this.URL.TabIndex = 14;
+            this.URL.Text = "Open 127.0.0.1 in your browser";
+            this.URL.Visible = false;
+            this.URL.Click += new System.EventHandler(this.URL_Click);
+            // 
+            // MSG
+            // 
+            this.MSG.AutoSize = true;
+            this.MSG.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.MSG.Location = new System.Drawing.Point(83, 227);
+            this.MSG.Name = "MSG";
+            this.MSG.Size = new System.Drawing.Size(87, 17);
+            this.MSG.TabIndex = 15;
+            this.MSG.Text = "Not Running";
+            // 
             // WebServer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(394, 661);
+            this.Controls.Add(this.MSG);
+            this.Controls.Add(this.URL);
+            this.Controls.Add(this.AutoIndex);
+            this.Controls.Add(this.CORS);
+            this.Controls.Add(this.viewOnGithub);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.DELETE);
             this.Controls.Add(this.PUT);
             this.Controls.Add(this.ServingPath);
@@ -189,6 +271,12 @@
         private System.Windows.Forms.Label ServingPath;
         private System.Windows.Forms.CheckBox PUT;
         private System.Windows.Forms.CheckBox DELETE;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label viewOnGithub;
+        private System.Windows.Forms.CheckBox CORS;
+        private System.Windows.Forms.CheckBox AutoIndex;
+        private System.Windows.Forms.Label URL;
+        private System.Windows.Forms.Label MSG;
     }
 }
 
