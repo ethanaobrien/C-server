@@ -37,12 +37,16 @@
             this.ServingPath = new System.Windows.Forms.Label();
             this.PUT = new System.Windows.Forms.CheckBox();
             this.DELETE = new System.Windows.Forms.CheckBox();
-            this.label3 = new System.Windows.Forms.Label();
+            this.BottomLeftLabel = new System.Windows.Forms.Label();
             this.viewOnGithub = new System.Windows.Forms.Label();
             this.CORS = new System.Windows.Forms.CheckBox();
             this.AutoIndex = new System.Windows.Forms.CheckBox();
             this.URL = new System.Windows.Forms.Label();
             this.MSG = new System.Windows.Forms.Label();
+            this.UpdateTitle = new System.Windows.Forms.Label();
+            this.UpdateLink = new System.Windows.Forms.Label();
+            this.UpdateVersion = new System.Windows.Forms.Label();
+            this.ListDirectory = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.Port)).BeginInit();
             this.SuspendLayout();
             // 
@@ -157,15 +161,15 @@
             this.DELETE.UseVisualStyleBackColor = true;
             this.DELETE.CheckStateChanged += new System.EventHandler(this.DELETE_CheckStateChanged);
             // 
-            // label3
+            // BottomLeftLabel
             // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label3.Location = new System.Drawing.Point(45, 617);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(139, 17);
-            this.label3.TabIndex = 10;
-            this.label3.Text = "C Server Version 2.3";
+            this.BottomLeftLabel.AutoSize = true;
+            this.BottomLeftLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.BottomLeftLabel.Location = new System.Drawing.Point(45, 617);
+            this.BottomLeftLabel.Name = "BottomLeftLabel";
+            this.BottomLeftLabel.Size = new System.Drawing.Size(139, 17);
+            this.BottomLeftLabel.TabIndex = 10;
+            this.BottomLeftLabel.Text = "C Server Version 2.3";
             // 
             // viewOnGithub
             // 
@@ -186,9 +190,9 @@
             this.CORS.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.CORS.Location = new System.Drawing.Point(48, 422);
             this.CORS.Name = "CORS";
-            this.CORS.Size = new System.Drawing.Size(147, 21);
+            this.CORS.Size = new System.Drawing.Size(149, 21);
             this.CORS.TabIndex = 12;
-            this.CORS.Text = "Set CORS headers";
+            this.CORS.Text = "Set CORS Headers";
             this.CORS.UseVisualStyleBackColor = true;
             this.CORS.CheckStateChanged += new System.EventHandler(this.CORS_CheckStateChanged);
             // 
@@ -228,17 +232,71 @@
             this.MSG.TabIndex = 15;
             this.MSG.Text = "Not Running";
             // 
+            // UpdateTitle
+            // 
+            this.UpdateTitle.AutoSize = true;
+            this.UpdateTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 15F);
+            this.UpdateTitle.Location = new System.Drawing.Point(108, 523);
+            this.UpdateTitle.Name = "UpdateTitle";
+            this.UpdateTitle.Size = new System.Drawing.Size(160, 25);
+            this.UpdateTitle.TabIndex = 16;
+            this.UpdateTitle.Text = "Update Available";
+            this.UpdateTitle.Visible = false;
+            // 
+            // UpdateLink
+            // 
+            this.UpdateLink.AutoSize = true;
+            this.UpdateLink.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.UpdateLink.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.UpdateLink.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.UpdateLink.Location = new System.Drawing.Point(67, 572);
+            this.UpdateLink.Name = "UpdateLink";
+            this.UpdateLink.Size = new System.Drawing.Size(255, 17);
+            this.UpdateLink.TabIndex = 17;
+            this.UpdateLink.Text = "Click Here to go to the downloads page";
+            this.UpdateLink.Visible = false;
+            this.UpdateLink.Click += new System.EventHandler(this.UpdateLink_Click);
+            // 
+            // UpdateVersion
+            // 
+            this.UpdateVersion.AutoSize = true;
+            this.UpdateVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
+            this.UpdateVersion.Location = new System.Drawing.Point(134, 548);
+            this.UpdateVersion.Name = "UpdateVersion";
+            this.UpdateVersion.Size = new System.Drawing.Size(106, 15);
+            this.UpdateVersion.TabIndex = 18;
+            this.UpdateVersion.Text = "Version null is out!";
+            this.UpdateVersion.Visible = false;
+            // 
+            // ListDirectory
+            // 
+            this.ListDirectory.AutoSize = true;
+            this.ListDirectory.Checked = true;
+            this.ListDirectory.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.ListDirectory.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.ListDirectory.Location = new System.Drawing.Point(48, 477);
+            this.ListDirectory.Name = "ListDirectory";
+            this.ListDirectory.Size = new System.Drawing.Size(129, 21);
+            this.ListDirectory.TabIndex = 19;
+            this.ListDirectory.Text = "Directory Listing";
+            this.ListDirectory.UseVisualStyleBackColor = true;
+            this.ListDirectory.CheckStateChanged += new System.EventHandler(this.ListDirectory_CheckStateChanged);
+            // 
             // WebServer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(394, 661);
+            this.Controls.Add(this.ListDirectory);
+            this.Controls.Add(this.UpdateVersion);
+            this.Controls.Add(this.UpdateLink);
+            this.Controls.Add(this.UpdateTitle);
             this.Controls.Add(this.MSG);
             this.Controls.Add(this.URL);
             this.Controls.Add(this.AutoIndex);
             this.Controls.Add(this.CORS);
             this.Controls.Add(this.viewOnGithub);
-            this.Controls.Add(this.label3);
+            this.Controls.Add(this.BottomLeftLabel);
             this.Controls.Add(this.DELETE);
             this.Controls.Add(this.PUT);
             this.Controls.Add(this.ServingPath);
@@ -271,12 +329,16 @@
         private System.Windows.Forms.Label ServingPath;
         private System.Windows.Forms.CheckBox PUT;
         private System.Windows.Forms.CheckBox DELETE;
-        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label BottomLeftLabel;
         private System.Windows.Forms.Label viewOnGithub;
         private System.Windows.Forms.CheckBox CORS;
         private System.Windows.Forms.CheckBox AutoIndex;
         private System.Windows.Forms.Label URL;
         private System.Windows.Forms.Label MSG;
+        private System.Windows.Forms.Label UpdateTitle;
+        private System.Windows.Forms.Label UpdateLink;
+        private System.Windows.Forms.Label UpdateVersion;
+        private System.Windows.Forms.CheckBox ListDirectory;
     }
 }
 

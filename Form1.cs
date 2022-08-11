@@ -7,6 +7,7 @@ namespace WebServer
 {
     public partial class WebServer : Form
     {
+        private double version = 2.4;
         Server mainServer;
         private string pathToServe;
         private int port = 8080;
@@ -16,6 +17,15 @@ namespace WebServer
         {
             InitializeComponent();
             loadSettings();
+            this.BottomLeftLabel.Text = "C Server Version " + this.version;
+            Updater update = new Updater(this.version);
+            update.check4Updates((double version) =>
+            {
+                this.UpdateLink.Visible = true;
+                this.UpdateTitle.Visible = true;
+                this.UpdateVersion.Visible = true;
+                this.UpdateVersion.Text = "Version " + version + " is out!";
+            });
         }
         private void toggleServer()
         {
@@ -36,7 +46,7 @@ namespace WebServer
         {
             this.MSG.Visible = false;
             this.URL.Visible = true;
-            mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked);
+            mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked, ListDirectory.Checked);
             this.localHostURL = "http://localhost:" + port + "/";
             this.URL.Text = "Open " + this.localHostURL + " in your browser";
         }
@@ -46,16 +56,16 @@ namespace WebServer
             {
                 string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "C-server", "config.1");
                 string folder = Path.GetDirectoryName(path);
-                if (!Directory.Exists(folder))
+                if (!System.IO.Directory.Exists(folder))
                 {
-                    Directory.CreateDirectory(folder);
+                    System.IO.Directory.CreateDirectory(folder);
                 }
                 if (File.Exists(path))
                 {
                     File.Delete(path);
                 }
                 FileStream fs = File.Create(path);
-                byte[] data = Encoding.UTF8.GetBytes(port + "\n" + pathToServe + "\n" + (PUT.Checked ? "1" : "0") + "\n" + (DELETE.Checked ? "1" : "0") + "\n" + (CORS.Checked ? "1" : "0") + "\n" + (AutoIndex.Checked ? "1" : "0") + "\n");
+                byte[] data = Encoding.UTF8.GetBytes(port + "\n" + pathToServe + "\n" + (PUT.Checked ? "1" : "0") + "\n" + (DELETE.Checked ? "1" : "0") + "\n" + (CORS.Checked ? "1" : "0") + "\n" + (AutoIndex.Checked ? "1" : "0") + "\n" + (ListDirectory.Checked ? "1" : "0") + "\n");
                 fs.Write(data, 0, data.Length);
                 fs.Close();
             }
@@ -103,6 +113,10 @@ namespace WebServer
                     else if (i == 5)
                     {
                         AutoIndex.Checked = (cl.Equals("1"));
+                    }
+                    else if (i == 6)
+                    {
+                        ListDirectory.Checked = (cl.Equals("1"));
                     }
                     i++;
                 }
@@ -200,6 +214,15 @@ namespace WebServer
             saveSettings();
         }
 
+        private void ListDirectory_CheckStateChanged(object sender, EventArgs e)
+        {
+            if (mainServer != null)
+            {
+                mainServer.setDirectory(ListDirectory.Checked);
+            }
+            saveSettings();
+        }
+
         private void viewOnGithub_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start("https://github.com/ethanaobrien/C-server");
@@ -208,6 +231,11 @@ namespace WebServer
         private void URL_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start(this.localHostURL);
+        }
+
+        private void UpdateLink_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://github.com/ethanaobrien/C-server/releases/latest");
         }
     }
 }

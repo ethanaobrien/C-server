@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Net;
-using System.Net.Sockets;
 using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using System.Collections;
+using System.Windows.Forms;
 
-namespace WebServer {
-    internal static class Program {
+namespace WebServer
+{
+    internal static class Program
+    {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -21,6 +20,34 @@ namespace WebServer {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new WebServer());
+        }
+    }
+}
+
+public class Updater
+{
+    private double version;
+    private string versionURL = "https://raw.githubusercontent.com/ethanaobrien/C-server/main/version";
+    public Updater(double version)
+    {
+        this.version = version;
+    }
+    public async void check4Updates(Action<Double> callback)
+    {
+        double current_version;
+        try
+        {
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(versionURL);
+            current_version = Double.Parse(await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception e)
+        {
+            return;
+        }
+        if (current_version > this.version)
+        {
+            callback(current_version);
         }
     }
 }
@@ -39,7 +66,8 @@ public class Server
         public bool allowPut;
         public bool cors;
         public bool index;
-        public SET(int port, string mainPath, bool allowPut, bool allowDelete, bool cors, bool index)
+        public bool directoryListing;
+        public SET(int port, string mainPath, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing)
         {
             this.port = port;
             this.mainPath = mainPath;
@@ -47,12 +75,13 @@ public class Server
             this.allowDelete = allowDelete;
             this.cors = cors;
             this.index = index;
+            this.directoryListing = directoryListing;
         }
     }
     private SET Settings;
     public Server()
     {
-        this.Settings = new SET(8080, "C:", false, false, false, false);
+        this.Settings = new SET(8080, "C:", false, false, false, false, true);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -60,13 +89,13 @@ public class Server
 
     public Server(string path, int port)
     {
-        this.Settings = new SET(port, path, false, false, false, false);
+        this.Settings = new SET(port, path, false, false, false, false, true);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    public Server(string path, int port, bool allowPut, bool allowDelete, bool cors, bool index)
+    public Server(string path, int port, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing)
     {
-        this.Settings = new SET(port, path, allowPut, allowDelete, cors, index);
+        this.Settings = new SET(port, path, allowPut, allowDelete, cors, index, directoryListing);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -78,6 +107,10 @@ public class Server
     public void setDelete(bool allow)
     {
         this.Settings.allowDelete = allow;
+    }
+    public void setDirectory(bool allow)
+    {
+        this.Settings.directoryListing = allow;
     }
     public void setCors(bool set)
     {
@@ -118,9 +151,9 @@ public class Server
         {
             this.mainThread.Abort();
         }
-            catch (Exception e) { }
+        catch (Exception e) { }
     }
-        private void ServerMain()
+    private void ServerMain()
     {
         try
         {
@@ -165,7 +198,7 @@ public class Server
                 //Console.WriteLine("Text received : {0}", data);
                 string url = Uri.UnescapeDataString(data.Split(' ')[1].Split('?')[0]);
                 string method = data.Split(' ')[0];
-                if (this.Settings.mainPath.Length==0)
+                if (this.Settings.mainPath.Length == 0)
                 {
                     byte[] msg = Encoding.UTF8.GetBytes("Path to serve not set!");
                     writeHeader(handler, 500, "Internal Server Error", (long)msg.Length, "", "");
@@ -180,7 +213,7 @@ public class Server
                 }
                 if (url.EndsWith("/") && File.Exists(path.Substring(0, path.Length - 1)))
                 {
-                    writeHeader(handler, 301, "Moved permanently", 0, "", "Location: " + url.Substring(0, url.Length-1) + "\r\n");
+                    writeHeader(handler, 301, "Moved permanently", 0, "", "Location: " + url.Substring(0, url.Length - 1) + "\r\n");
                     continue;
                 }
                 Console.WriteLine("Request {0} {1}", method, url);
@@ -284,6 +317,13 @@ public class Server
                 }
                 if (!index)
                 {
+                    if (!this.Settings.directoryListing)
+                    {
+                        byte[] msg3 = Encoding.UTF8.GetBytes("404 - File Not Found");
+                        writeHeader(handler, 404, "NOT FOUND", (long)msg3.Length, "", "");
+                        handler.Send(msg3);
+                        return;
+                    }
                     string resp = directoryListingTemplate + "<script>start(decodeURI(window.location.pathname));</script>";
                     if (!url.Equals("/"))
                     {
@@ -377,7 +417,7 @@ public class Server
                 stream.Close();
                 return;
             }
-            byte[] msg = Encoding.UTF8.GetBytes("404");
+            byte[] msg = Encoding.UTF8.GetBytes("404 - File Not Found");
             writeHeader(handler, 404, "NOT FOUND", (long)msg.Length, "", "");
             handler.Send(msg);
         }
