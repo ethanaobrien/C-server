@@ -56,7 +56,7 @@ public class Server
 {
     private int readChunkSize = 1024 * 1024 * 8;
     private int writeChunkSize = 1024;
-    private Socket listener;
+    private Socket listener = null;
     private Thread mainThread;
     private struct SET
     {
@@ -67,7 +67,8 @@ public class Server
         public bool cors;
         public bool index;
         public bool directoryListing;
-        public SET(int port, string mainPath, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing)
+        public bool LocalNetwork;
+        public SET(int port, string mainPath, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing, bool LocalNetwork)
         {
             this.port = port;
             this.mainPath = mainPath;
@@ -76,12 +77,13 @@ public class Server
             this.cors = cors;
             this.index = index;
             this.directoryListing = directoryListing;
+            this.LocalNetwork = LocalNetwork;
         }
     }
     private SET Settings;
     public Server()
     {
-        this.Settings = new SET(8080, "C:", false, false, false, false, true);
+        this.Settings = new SET(8080, "C:", false, false, false, false, true, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -89,13 +91,13 @@ public class Server
 
     public Server(string path, int port)
     {
-        this.Settings = new SET(port, path, false, false, false, false, true);
+        this.Settings = new SET(port, path, false, false, false, false, true, false);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
-    public Server(string path, int port, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing)
+    public Server(string path, int port, bool allowPut, bool allowDelete, bool cors, bool index, bool directoryListing, bool LocalNetwork)
     {
-        this.Settings = new SET(port, path, allowPut, allowDelete, cors, index, directoryListing);
+        this.Settings = new SET(port, path, allowPut, allowDelete, cors, index, directoryListing, LocalNetwork);
         this.mainThread = new Thread(ServerMain);
         this.mainThread.Start();
     }
@@ -112,6 +114,10 @@ public class Server
     {
         this.Settings.directoryListing = allow;
     }
+    public void setLocalNetwork(bool yes)
+    {
+        this.Settings.LocalNetwork = yes;
+    }
     public void setCors(bool set)
     {
         this.Settings.cors = set;
@@ -126,6 +132,7 @@ public class Server
     }
     public void Terminate()
     {
+        if (this.listener == null) return;
         try
         {
             running = false;
@@ -157,13 +164,13 @@ public class Server
     {
         try
         {
-            IPHostEntry host = Dns.Resolve("127.0.0.1");
-            IPAddress ipAddress = host.AddressList[0];
+            string ListenHost = this.Settings.LocalNetwork ? "0.0.0.0" : "127.0.0.1";
+            IPAddress ipAddress = IPAddress.Parse(ListenHost);
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, this.Settings.port);
             this.listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.listener.Bind(localEndPoint);
             this.listener.Listen(100); //connection limit
-            Console.WriteLine("Listening on http://127.0.0.1:{0}", this.Settings.port);
+            Console.WriteLine("Listening on http://{0}:{1}", ListenHost, this.Settings.port);
             while (running)
             {
                 try
@@ -172,7 +179,8 @@ public class Server
                     Thread t = new Thread(onRequest);
                     t.Start(handler);
                 }
-                catch (Exception e) {
+                catch (Exception e)
+                {
                     break;
                 }
             }
@@ -182,6 +190,29 @@ public class Server
         catch (Exception e)
         {
             Console.WriteLine(e.ToString());
+        }
+    }
+    public string[] GetURLs()
+    {
+        if (this.Settings.LocalNetwork)
+        {
+            IPHostEntry ipEntry = Dns.GetHostEntry(Dns.GetHostName());
+            IPAddress[] addr = ipEntry.AddressList;
+            string[] rv = new string[addr.Length];
+            rv[0] = "127.0.0.1";
+            for (int i = 0, j = 1; i < addr.Length; i++)
+            {
+                if (addr[i].AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    rv[j] = addr[i].ToString();
+                    j++;
+                }
+            }
+            return rv;
+        }
+        else
+        {
+            return new string[] { "127.0.0.1" };
         }
     }
     private void onRequest(Object obj)

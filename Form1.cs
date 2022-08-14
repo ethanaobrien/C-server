@@ -7,12 +7,11 @@ namespace WebServer
 {
     public partial class WebServer : Form
     {
-        private double version = 2.6;
+        private double version = 2.7;
         Server mainServer;
         private string pathToServe;
         private int port = 8080;
         private bool running = false;
-        private string localHostURL = "http://127.0.0.1:8080/";
         private bool actionInProgress = false;
         public WebServer()
         {
@@ -27,23 +26,26 @@ namespace WebServer
                 this.UpdateVersion.Visible = true;
                 this.UpdateVersion.Text = "Version " + version + " is out!";
             });
-            this.running = true;
             actionInProgress = true;
             toggleServer();
             actionInProgress = false;
         }
         private void toggleServer()
         {
-            if (this.running)
+            if (!this.running)
             {
+                this.MSG.Visible = false;
                 this.Status.Text = "Running";
+                this.running = true;
                 startServer();
+                SetURLText();
             }
             else if (mainServer != null)
             {
                 mainServer.Terminate();
                 mainServer = null;
-                this.URL.Visible = false;
+                SetURLText();
+                this.running = false;
                 this.Status.Text = "Not Running";
                 this.MSG.Text = "Not Running";
                 this.MSG.Visible = true;
@@ -51,11 +53,46 @@ namespace WebServer
         }
         private void startServer()
         {
-            this.MSG.Visible = false;
-            this.URL.Visible = true;
-            mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked, ListDirectory.Checked);
-            this.localHostURL = "http://127.0.0.1:" + port + "/";
-            this.URL.Text = "Open " + this.localHostURL + " in your browser";
+            mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked, ListDirectory.Checked, localNetwork.Checked);
+        }
+        private Label[] URLS = new Label[5] { null, null, null, null, null};
+        private void SetURLText()
+        {
+            for (int i = 0; i < URLS.Length; i++)
+            {
+                if (URLS[i] == null) break;
+                this.Controls.Remove(URLS[i]);
+                URLS[i] = null;
+                this.URL.Visible = false;
+            }
+            if (this.mainServer != null)
+            {
+                string[] urls = this.mainServer.GetURLs();
+                this.URL.Visible = true;
+                int location = 368;
+                for (int i = 0; i < urls.Length; i++)
+                {
+                    if (urls[i] == null || urls[i].Length == 0) break;
+                    if (5 < i) break;
+                    URLS[i] = new System.Windows.Forms.Label();
+                    URLS[i].AutoSize = true;
+                    URLS[i].Cursor = System.Windows.Forms.Cursors.Hand;
+                    URLS[i].Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+                    URLS[i].ForeColor = System.Drawing.SystemColors.Highlight;
+                    URLS[i].Location = new System.Drawing.Point(80, location);
+                    URLS[i].Name = "URL"+i;
+                    URLS[i].Size = new System.Drawing.Size(276, 17);
+                    URLS[i].TabIndex = 14;
+                    URLS[i].Text = "http://"+urls[i]+":"+this.port+"/";
+                    URLS[i].Click += new System.EventHandler(this.URL_Click);
+                    this.Controls.Add(URLS[i]);
+                    location += 30;
+                }
+            }
+        }
+        private void URL_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(((Label)sender).Text);
         }
         private void saveSettings()
         {
@@ -72,7 +109,7 @@ namespace WebServer
                     File.Delete(path);
                 }
                 FileStream fs = File.Create(path);
-                byte[] data = Encoding.UTF8.GetBytes(port + "\n" + pathToServe + "\n" + (PUT.Checked ? "1" : "0") + "\n" + (DELETE.Checked ? "1" : "0") + "\n" + (CORS.Checked ? "1" : "0") + "\n" + (AutoIndex.Checked ? "1" : "0") + "\n" + (ListDirectory.Checked ? "1" : "0") + "\n");
+                byte[] data = Encoding.UTF8.GetBytes(port + "\n" + pathToServe + "\n" + (PUT.Checked ? "1" : "0") + "\n" + (DELETE.Checked ? "1" : "0") + "\n" + (CORS.Checked ? "1" : "0") + "\n" + (AutoIndex.Checked ? "1" : "0") + "\n" + (ListDirectory.Checked ? "1" : "0") + "\n" + (localNetwork.Checked ? "1" : "0") + "\n");
                 fs.Write(data, 0, data.Length);
                 fs.Close();
             }
@@ -125,12 +162,15 @@ namespace WebServer
                     {
                         ListDirectory.Checked = (cl.Equals("1"));
                     }
+                    else if (i == 7)
+                    {
+                        localNetwork.Checked = (cl.Equals("1"));
+                    }
                     i++;
                 }
                 this.ServingPath.Text = "Currently Serving: " + pathToServe;
                 this.Port.Value = new decimal(new int[] { port, 0, 0, 0 });
-                this.localHostURL = "http://127.0.0.1:" + port + "/";
-                this.URL.Text = "Open " + this.localHostURL + " in your browser";
+                this.SetURLText();
             }
             catch (Exception e) { }
         }
@@ -138,7 +178,6 @@ namespace WebServer
         {
             if (actionInProgress) return;
             actionInProgress = true;
-            running = !running;
             toggleServer();
             actionInProgress = false;
         }
@@ -175,9 +214,8 @@ namespace WebServer
 
         private void Port_ValueChanged(object sender, EventArgs e)
         {
-            if (this.running)
+            if (mainServer != null)
             {
-                this.URL.Visible = false;
                 this.MSG.Text = "Restart server to init changes";
                 this.MSG.Visible = true;
             }
@@ -233,14 +271,20 @@ namespace WebServer
             System.Diagnostics.Process.Start("https://github.com/ethanaobrien/C-server");
         }
 
-        private void URL_Click(object sender, EventArgs e)
-        {
-            System.Diagnostics.Process.Start(this.localHostURL);
-        }
-
         private void UpdateLink_Click(object sender, EventArgs e)
         {
             System.Diagnostics.Process.Start("https://github.com/ethanaobrien/C-server/releases/latest");
+        }
+
+        private void localNetwork_CheckStateChanged(object sender, EventArgs e)
+        {
+            if (mainServer != null)
+            {
+                this.MSG.Text = "Restart server to init changes";
+                this.MSG.Visible = true;
+                mainServer.setLocalNetwork(localNetwork.Checked);
+            }
+            saveSettings();
         }
     }
 }

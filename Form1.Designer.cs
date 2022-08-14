@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(WebServer));
             this.label1 = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.Status = new System.Windows.Forms.Label();
@@ -41,12 +42,13 @@
             this.viewOnGithub = new System.Windows.Forms.Label();
             this.CORS = new System.Windows.Forms.CheckBox();
             this.AutoIndex = new System.Windows.Forms.CheckBox();
-            this.URL = new System.Windows.Forms.Label();
             this.MSG = new System.Windows.Forms.Label();
             this.UpdateTitle = new System.Windows.Forms.Label();
             this.UpdateLink = new System.Windows.Forms.Label();
             this.UpdateVersion = new System.Windows.Forms.Label();
             this.ListDirectory = new System.Windows.Forms.CheckBox();
+            this.localNetwork = new System.Windows.Forms.CheckBox();
+            this.URL = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.Port)).BeginInit();
             this.SuspendLayout();
             // 
@@ -54,7 +56,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Arial", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(58, 46);
+            this.label1.Location = new System.Drawing.Point(63, 21);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(264, 37);
             this.label1.TabIndex = 0;
@@ -63,7 +65,7 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(200, 112);
+            this.button1.Location = new System.Drawing.Point(200, 84);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(138, 48);
             this.button1.TabIndex = 1;
@@ -75,7 +77,7 @@
             // 
             this.Status.AutoSize = true;
             this.Status.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Status.Location = new System.Drawing.Point(61, 125);
+            this.Status.Location = new System.Drawing.Point(44, 97);
             this.Status.Name = "Status";
             this.Status.Size = new System.Drawing.Size(116, 24);
             this.Status.TabIndex = 2;
@@ -85,7 +87,7 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.label2.Location = new System.Drawing.Point(86, 181);
+            this.label2.Location = new System.Drawing.Point(93, 140);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(38, 17);
             this.label2.TabIndex = 4;
@@ -95,7 +97,7 @@
             // 
             this.Port.Cursor = System.Windows.Forms.Cursors.IBeam;
             this.Port.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.Port.Location = new System.Drawing.Point(130, 179);
+            this.Port.Location = new System.Drawing.Point(137, 138);
             this.Port.Maximum = new decimal(new int[] {
             100000,
             0,
@@ -119,7 +121,7 @@
             // ChooseDirectory
             // 
             this.ChooseDirectory.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.ChooseDirectory.Location = new System.Drawing.Point(113, 309);
+            this.ChooseDirectory.Location = new System.Drawing.Point(113, 227);
             this.ChooseDirectory.Name = "ChooseDirectory";
             this.ChooseDirectory.Size = new System.Drawing.Size(140, 39);
             this.ChooseDirectory.TabIndex = 6;
@@ -131,7 +133,7 @@
             // 
             this.ServingPath.AutoSize = true;
             this.ServingPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ServingPath.Location = new System.Drawing.Point(45, 266);
+            this.ServingPath.Location = new System.Drawing.Point(26, 196);
             this.ServingPath.Name = "ServingPath";
             this.ServingPath.Size = new System.Drawing.Size(125, 17);
             this.ServingPath.TabIndex = 7;
@@ -141,7 +143,7 @@
             // 
             this.PUT.AutoSize = true;
             this.PUT.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.PUT.Location = new System.Drawing.Point(48, 368);
+            this.PUT.Location = new System.Drawing.Point(22, 272);
             this.PUT.Name = "PUT";
             this.PUT.Size = new System.Drawing.Size(148, 21);
             this.PUT.TabIndex = 8;
@@ -153,7 +155,7 @@
             // 
             this.DELETE.AutoSize = true;
             this.DELETE.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.DELETE.Location = new System.Drawing.Point(48, 395);
+            this.DELETE.Location = new System.Drawing.Point(200, 272);
             this.DELETE.Name = "DELETE";
             this.DELETE.Size = new System.Drawing.Size(168, 21);
             this.DELETE.TabIndex = 9;
@@ -188,7 +190,7 @@
             // 
             this.CORS.AutoSize = true;
             this.CORS.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.CORS.Location = new System.Drawing.Point(48, 422);
+            this.CORS.Location = new System.Drawing.Point(21, 299);
             this.CORS.Name = "CORS";
             this.CORS.Size = new System.Drawing.Size(149, 21);
             this.CORS.TabIndex = 12;
@@ -200,7 +202,7 @@
             // 
             this.AutoIndex.AutoSize = true;
             this.AutoIndex.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.AutoIndex.Location = new System.Drawing.Point(48, 449);
+            this.AutoIndex.Location = new System.Drawing.Point(200, 299);
             this.AutoIndex.Name = "AutoIndex";
             this.AutoIndex.Size = new System.Drawing.Size(174, 21);
             this.AutoIndex.TabIndex = 13;
@@ -208,25 +210,11 @@
             this.AutoIndex.UseVisualStyleBackColor = true;
             this.AutoIndex.CheckStateChanged += new System.EventHandler(this.AutoIndex_CheckStateChanged);
             // 
-            // URL
-            // 
-            this.URL.AutoSize = true;
-            this.URL.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.URL.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.URL.ForeColor = System.Drawing.SystemColors.Highlight;
-            this.URL.Location = new System.Drawing.Point(86, 227);
-            this.URL.Name = "URL";
-            this.URL.Size = new System.Drawing.Size(276, 17);
-            this.URL.TabIndex = 14;
-            this.URL.Text = "Open http://localhost:8080 in your browser";
-            this.URL.Visible = false;
-            this.URL.Click += new System.EventHandler(this.URL_Click);
-            // 
             // MSG
             // 
             this.MSG.AutoSize = true;
             this.MSG.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.MSG.Location = new System.Drawing.Point(83, 227);
+            this.MSG.Location = new System.Drawing.Point(44, 169);
             this.MSG.Name = "MSG";
             this.MSG.Size = new System.Drawing.Size(87, 17);
             this.MSG.TabIndex = 15;
@@ -274,7 +262,7 @@
             this.ListDirectory.Checked = true;
             this.ListDirectory.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ListDirectory.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
-            this.ListDirectory.Location = new System.Drawing.Point(48, 477);
+            this.ListDirectory.Location = new System.Drawing.Point(22, 326);
             this.ListDirectory.Name = "ListDirectory";
             this.ListDirectory.Size = new System.Drawing.Size(129, 21);
             this.ListDirectory.TabIndex = 19;
@@ -282,17 +270,40 @@
             this.ListDirectory.UseVisualStyleBackColor = true;
             this.ListDirectory.CheckStateChanged += new System.EventHandler(this.ListDirectory_CheckStateChanged);
             // 
+            // localNetwork
+            // 
+            this.localNetwork.AutoSize = true;
+            this.localNetwork.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.localNetwork.Location = new System.Drawing.Point(200, 327);
+            this.localNetwork.Name = "localNetwork";
+            this.localNetwork.Size = new System.Drawing.Size(171, 21);
+            this.localNetwork.TabIndex = 20;
+            this.localNetwork.Text = "Listen on local network";
+            this.localNetwork.UseVisualStyleBackColor = true;
+            this.localNetwork.CheckStateChanged += new System.EventHandler(this.localNetwork_CheckStateChanged);
+            // 
+            // URL
+            // 
+            this.URL.AutoSize = true;
+            this.URL.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.URL.Location = new System.Drawing.Point(18, 368);
+            this.URL.Name = "URL";
+            this.URL.Size = new System.Drawing.Size(54, 20);
+            this.URL.TabIndex = 21;
+            this.URL.Text = "URLs:";
+            // 
             // WebServer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(394, 661);
+            this.Controls.Add(this.URL);
+            this.Controls.Add(this.localNetwork);
             this.Controls.Add(this.ListDirectory);
             this.Controls.Add(this.UpdateVersion);
             this.Controls.Add(this.UpdateLink);
             this.Controls.Add(this.UpdateTitle);
             this.Controls.Add(this.MSG);
-            this.Controls.Add(this.URL);
             this.Controls.Add(this.AutoIndex);
             this.Controls.Add(this.CORS);
             this.Controls.Add(this.viewOnGithub);
@@ -306,6 +317,7 @@
             this.Controls.Add(this.Status);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximumSize = new System.Drawing.Size(410, 700);
             this.MinimumSize = new System.Drawing.Size(410, 700);
             this.Name = "WebServer";
@@ -333,12 +345,13 @@
         private System.Windows.Forms.Label viewOnGithub;
         private System.Windows.Forms.CheckBox CORS;
         private System.Windows.Forms.CheckBox AutoIndex;
-        private System.Windows.Forms.Label URL;
         private System.Windows.Forms.Label MSG;
         private System.Windows.Forms.Label UpdateTitle;
         private System.Windows.Forms.Label UpdateLink;
         private System.Windows.Forms.Label UpdateVersion;
         private System.Windows.Forms.CheckBox ListDirectory;
+        private System.Windows.Forms.CheckBox localNetwork;
+        private System.Windows.Forms.Label URL;
     }
 }
 
