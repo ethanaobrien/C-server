@@ -157,22 +157,27 @@ public class Server
     {
         try
         {
-            IPHostEntry host = Dns.GetHostEntry("localhost");
+            IPHostEntry host = Dns.Resolve("127.0.0.1");
             IPAddress ipAddress = host.AddressList[0];
             IPEndPoint localEndPoint = new IPEndPoint(ipAddress, this.Settings.port);
             this.listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.listener.Bind(localEndPoint);
             this.listener.Listen(100); //connection limit
-            Console.WriteLine("Listening on http://localhost:{0}", this.Settings.port);
+            Console.WriteLine("Listening on http://127.0.0.1:{0}", this.Settings.port);
             while (running)
             {
-                Socket handler = this.listener.Accept();
-                Thread t = new Thread(onRequest);
-                t.Start(handler);
-                //onRequest(handler);
+                try
+                {
+                    Socket handler = this.listener.Accept();
+                    Thread t = new Thread(onRequest);
+                    t.Start(handler);
+                }
+                catch (Exception e) {
+                    break;
+                }
             }
-            //handler.Shutdown(SocketShutdown.Both);
-            //handler.Close();
+            this.listener.Shutdown(SocketShutdown.Both);
+            this.listener.Close();
         }
         catch (Exception e)
         {

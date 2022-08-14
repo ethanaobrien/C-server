@@ -7,12 +7,13 @@ namespace WebServer
 {
     public partial class WebServer : Form
     {
-        private double version = 2.4;
+        private double version = 2.6;
         Server mainServer;
         private string pathToServe;
         private int port = 8080;
         private bool running = false;
-        private string localHostURL = "http://localhost:8080/";
+        private string localHostURL = "http://127.0.0.1:8080/";
+        private bool actionInProgress = false;
         public WebServer()
         {
             InitializeComponent();
@@ -26,11 +27,16 @@ namespace WebServer
                 this.UpdateVersion.Visible = true;
                 this.UpdateVersion.Text = "Version " + version + " is out!";
             });
+            this.running = true;
+            actionInProgress = true;
+            toggleServer();
+            actionInProgress = false;
         }
         private void toggleServer()
         {
             if (this.running)
             {
+                this.Status.Text = "Running";
                 startServer();
             }
             else if (mainServer != null)
@@ -38,6 +44,7 @@ namespace WebServer
                 mainServer.Terminate();
                 mainServer = null;
                 this.URL.Visible = false;
+                this.Status.Text = "Not Running";
                 this.MSG.Text = "Not Running";
                 this.MSG.Visible = true;
             }
@@ -47,7 +54,7 @@ namespace WebServer
             this.MSG.Visible = false;
             this.URL.Visible = true;
             mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked, ListDirectory.Checked);
-            this.localHostURL = "http://localhost:" + port + "/";
+            this.localHostURL = "http://127.0.0.1:" + port + "/";
             this.URL.Text = "Open " + this.localHostURL + " in your browser";
         }
         private void saveSettings()
@@ -122,19 +129,17 @@ namespace WebServer
                 }
                 this.ServingPath.Text = "Currently Serving: " + pathToServe;
                 this.Port.Value = new decimal(new int[] { port, 0, 0, 0 });
-                this.localHostURL = "http://localhost:" + port + "/";
+                this.localHostURL = "http://127.0.0.1:" + port + "/";
                 this.URL.Text = "Open " + this.localHostURL + " in your browser";
             }
             catch (Exception e) { }
         }
-        bool actionInProgress = false;
         private void button1_Click(object sender, EventArgs e)
         {
             if (actionInProgress) return;
             actionInProgress = true;
             running = !running;
             toggleServer();
-            this.Status.Text = running ? "Running" : "Not Running";
             actionInProgress = false;
         }
 
