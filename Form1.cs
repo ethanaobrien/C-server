@@ -7,7 +7,7 @@ namespace WebServer
 {
     public partial class WebServer : Form
     {
-        private double version = 2.7;
+        private double version = 2.8;
         Server mainServer;
         private string pathToServe;
         private int port = 8080;
@@ -55,7 +55,7 @@ namespace WebServer
         {
             mainServer = new Server(pathToServe, port, PUT.Checked, DELETE.Checked, CORS.Checked, AutoIndex.Checked, ListDirectory.Checked, localNetwork.Checked);
         }
-        private Label[] URLS = new Label[5] { null, null, null, null, null};
+        private Label[] URLS = new Label[5] { null, null, null, null, null };
         private void SetURLText()
         {
             for (int i = 0; i < URLS.Length; i++)
@@ -80,10 +80,10 @@ namespace WebServer
                     URLS[i].Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
                     URLS[i].ForeColor = System.Drawing.SystemColors.Highlight;
                     URLS[i].Location = new System.Drawing.Point(80, location);
-                    URLS[i].Name = "URL"+i;
+                    URLS[i].Name = "URL" + i;
                     URLS[i].Size = new System.Drawing.Size(276, 17);
                     URLS[i].TabIndex = 14;
-                    URLS[i].Text = "http://"+urls[i]+":"+this.port+"/";
+                    URLS[i].Text = "http://" + urls[i] + ":" + this.port + "/";
                     URLS[i].Click += new System.EventHandler(this.URL_Click);
                     this.Controls.Add(URLS[i]);
                     location += 30;

@@ -202,7 +202,7 @@ public class Server
             rv[0] = "127.0.0.1";
             for (int i = 0, j = 1; i < addr.Length; i++)
             {
-                if (addr[i].AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                if (addr[i].AddressFamily == AddressFamily.InterNetwork)
                 {
                     rv[j] = addr[i].ToString();
                     j++;
@@ -228,9 +228,12 @@ public class Server
                 {
                     byte[] bytes = new byte[1];
                     int bytesRec = handler.Receive(bytes);
+                    if (bytesRec == 0) break;
                     data += Encoding.UTF8.GetString(bytes, 0, bytesRec);
                     consumed = (data.IndexOf("\r\n\r\n") != -1);
                 }
+                if (!consumed)
+                    break;
                 //Console.WriteLine("Text received : {0}", data);
                 string url = Uri.UnescapeDataString(data.Split(' ')[1].Split('?')[0]);
                 string method = data.Split(' ')[0];
@@ -279,10 +282,10 @@ public class Server
         }
         catch (Exception e)
         {
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
             Console.WriteLine("Error: {0}", e.ToString());
         }
+        handler.Shutdown(SocketShutdown.Both);
+        handler.Close();
     }
     private void writeHeader(Socket handler, int httpCode, string code, long cl, string ct, string extra)
     {
@@ -502,7 +505,8 @@ public class Server
                 }
                 written += (long)a;
                 byte[] bytes = new byte[a];
-                handler.Receive(bytes);
+                int qwe = handler.Receive(bytes);
+                if (qwe == 0) break;
                 fs.Write(bytes, 0, a);
             }
             fs.Close();
